@@ -1231,7 +1231,7 @@ function setupUI(){
   @media (max-width:520px){#bar{padding:0 10px 0 146px;justify-content:flex-end} .gbtn{padding:8px 11px;font-size:13px}}`;
   document.head.appendChild(css);
   const div=(id,html='')=>{const d=document.createElement('div'); d.id=id; d.className='gx'; d.innerHTML=html; document.body.appendChild(d); return d;};
-  div('hud',`<div class="t">延平宮<small id="prog">參拜 0 / 7</small><small id="ol" style="display:none">線上 1 人</small></div><div class="r">
+  div('hud',`<div class="t">延平宮<small id="prog">參拜 0 / 7</small><small id="ol" style="display:none">線上 1 人</small><small id="wx"></small></div><div class="r">
     <button class="gbtn" id="sayBtn" style="display:none">💬 聊天</button><button class="gbtn" id="emoBtn">🙋 動作</button><button class="gbtn" id="muBtn">♪ 音樂</button><button class="gbtn" id="nbBtn">公告</button><button class="gbtn" id="stBtn"><span class="dot"></span><span>道長</span></button><button class="gbtn" id="menuBtn">☰</button></div>`);
   div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · Enter 聊天 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('chatlog'); div('qp'); div('dock','<input id="dkIn" maxlength="20" placeholder="說點什麼…" autocomplete="off" enterkeyhint="send"><button id="dkSend">送出</button>'); document.body.insertAdjacentHTML('beforeend','<button id="emoL" class="gx">🙋<small>動作</small></button>'); div('modal','<div class="card"></div>');
   document.getElementById('stBtn').onclick=()=>showDaoist();
@@ -1657,11 +1657,77 @@ function buildCamColliders(){ const bb=new THREE.Box3(), sz=new THREE.Vector3();
     if(m.transparent||m.alphaTest>0||m===M.corr||m===M.shingle||m===M.asphalt||m===M.terrazzo) return;
     bb.setFromObject(o); bb.getSize(sz); if(Math.min(sz.x,sz.y,sz.z)<.1||bb.min.y>3.4||Math.max(sz.x,sz.z)>40||Math.max(sz.x,sz.z)<.75) return; CAM_COLL.push(o); });   // 細柱子不算,免得鏡頭一直跳
   for(const b of BB) CAM_COLL.push(b.m); }                                                    // 神像照片要擋
+// ── 10.14 現實同步:時鐘、天色(台北時間)、天氣(Open-Meteo,免金鑰)────────────
+const ENV={blend:null,wx:{code:0,temp:null},rain:null,stars:null,flashT:0,hemi:null,lights:[],clockTx:null,lastMin:-1};
+const ENV_P={    // 天色預設:白天 / 黃昏(原本的樣子) / 夜晚
+  day:  {zen:0x3f72c4,mid:0x92b8dc,hSun:0xf2e4cc,hAnti:0xc8dae8,sunC:0xfffbe8,sunL:0xfff0d8,sunI:3.4,el:58,az:200,fog:0xc4d2de,fogD:.0034,hemiS:0xd0dff0,hemiG:0x5a4a3a,hemiI:.62,exp:.6,env:.45,lamp:.45},
+  dusk: {zen:0x3a4f86,mid:0xb58f9c,hSun:0xffb85e,hAnti:0xf2c2a6,sunC:0xfff1cf,sunL:0xffb070,sunI:5.0,el:LAYOUT.sun.elevation,az:LAYOUT.sun.azimuth,fog:0xd8ac92,fogD:.0046,hemiS:0xd6c2cc,hemiG:0x4a2a1c,hemiI:.55,exp:.62,env:.42,lamp:1},
+  night:{zen:0x05081a,mid:0x111a36,hSun:0x262844,hAnti:0x1a2038,sunC:0x9fb0d8,sunL:0x8ea6d8,sunI:.55,el:40,az:140,fog:0x121624,fogD:.006,hemiS:0x46557e,hemiG:0x1a1410,hemiI:.32,exp:.8,env:.18,lamp:1.5}};
+function taipeiHour(){const q=+Q.get('hour'); if(Q.has('hour')&&!isNaN(q)) return q;
+  const t=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Taipei'})); return t.getHours()+t.getMinutes()/60;}
+function skyMix(h){                                     // 依時間在三種天色間漸變
+  const k=[[0,'night',null],[4.8,'night',null],[6.2,'day',null],[16.2,'day',null],[17.6,'dusk',null],[18.8,'night',null],[24,'night',null]];
+  for(let i=0;i<k.length-1;i++) if(h>=k[i][0]&&h<k[i+1][0]){const t=(h-k[i][0])/(k[i+1][0]-k[i][0]); return [k[i][1],k[i+1][1],t*t*(3-2*t)];}
+  return ['night','night',0];}
+function lerpP(a,b,t){const o={}; for(const k in a) o[k]=typeof a[k]==='number'&&k!=='zen'&&!/^(mid|hSun|hAnti|sunC|sunL|fog|hemiS|hemiG)$/.test(k)?a[k]+(b[k]-a[k])*t:new THREE.Color(a[k]).lerp(new THREE.Color(b[k]),t); return o;}
+function applyEnv(force){
+  const [a,b,t]=skyMix(taipeiHour()), w=ENV.wx.code, cloudy=w>=2&&w<45?.45:w>=45?.7:0, wet=w>=51;
+  const key=a+b+t.toFixed(2)+w; if(key===ENV.blend&&!force) return; ENV.blend=key;
+  const P=lerpP(ENV_P[a],ENV_P[b],t), U=sky.material.uniforms, gray=new THREE.Color(0x8a9098);
+  const night=(a==='night'?1-t:0)+(b==='night'?t:0);
+  U.cZen.value.copy(P.zen).lerp(gray.clone().multiplyScalar(1-night*.85),cloudy); U.cMid.value.copy(P.mid).lerp(gray.clone().multiplyScalar(1-night*.85),cloudy);
+  U.cHSun.value.copy(P.hSun).lerp(gray.clone().multiplyScalar(1-night*.8),cloudy); U.cHAnti.value.copy(P.hAnti).lerp(gray.clone().multiplyScalar(1-night*.8),cloudy);
+  U.cSun.value.copy(P.sunC).multiplyScalar(1-cloudy*.9);
+  const az=THREE.MathUtils.degToRad(P.az), el=THREE.MathUtils.degToRad(P.el);
+  sunDir.set(Math.sin(az)*Math.cos(el),Math.sin(el),-Math.cos(az)*Math.cos(el)).normalize(); sun.position.copy(sunDir).multiplyScalar(90);
+  sun.color.copy(P.sunL); sun.intensity=P.sunI*(1-cloudy*.65);
+  scene.fog.color.copy(P.fog).lerp(gray.clone().multiplyScalar(1-night*.8),cloudy*.8); scene.fog.density=P.fogD*(1+cloudy*.8+(w>=45&&w<50?1.5:0));
+  ENV.hemi.color.copy(P.hemiS); ENV.hemi.groundColor.copy(P.hemiG); ENV.hemi.intensity=ENV.hemiBase=P.hemiI*(1+cloudy*.25);
+  renderer.toneMappingExposure=P.exp; scene.environmentIntensity=P.env;
+  ENV.lights.forEach(([L,i0])=>L.intensity=i0*P.lamp*(wet?1.1:1));           // 晚上廟裡燈比較亮
+  if(ENV.stars) ENV.stars.material.opacity=Math.max(0,night-cloudy)*.9;
+  if(ENV.rain) ENV.rain.visible=wet;
+  try{const es=new THREE.Scene(); es.add(new THREE.Mesh(new THREE.SphereGeometry(1000,32,16),sky.material)); scene.environment?.dispose?.(); scene.environment=pmrem.fromScene(es,.03).texture;}catch(e){}
+}
+function drawClock(){                                    // 牆上時鐘:台北現在時間
+  const t=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Taipei'})), m=t.getMinutes(); if(m===ENV.lastMin) return; ENV.lastMin=m;
+  const c=ENV.clockTx.image, g=c.getContext('2d'), h=(t.getHours()%12+m/60)/12*6.283, mi=m/60*6.283;
+  g.clearRect(0,0,256,256); g.fillStyle='#f4efe4';g.beginPath();g.arc(128,128,120,0,7);g.fill();g.lineWidth=12;g.strokeStyle='#3a2a20';g.stroke();
+  g.fillStyle='#222';for(let i=0;i<12;i++){const a=i/12*6.283;g.fillRect(128+Math.sin(a)*96-4,128-Math.cos(a)*96-4,8,8);}
+  g.strokeStyle='#222';g.lineCap='round';g.lineWidth=10;g.beginPath();g.moveTo(128,128);g.lineTo(128+58*Math.sin(h),128-58*Math.cos(h));g.stroke();
+  g.lineWidth=6;g.beginPath();g.moveTo(128,128);g.lineTo(128+90*Math.sin(mi),128-90*Math.cos(mi));g.stroke(); ENV.clockTx.needsUpdate=true;}
+const WX_TXT=c=>c===0?['☀️','晴']:c<=2?['⛅','多雲']:c===3?['☁️','陰']:c<50?['🌫','霧']:c<70?['🌧','雨']:c<80?['🌨','雪']:c<95?['🌦','陣雨']:['⛈','雷雨'];
+async function fetchWx(){const f=Q.get('wx'); if(f){ENV.wx={code:{rain:63,cloud:3,clear:0,storm:95,fog:45}[f]??0,temp:22};}
+  else try{const j=await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=25.06&longitude=121.51&current=weather_code,temperature_2m&timezone=Asia%2FTaipei',{cache:'no-store'})).json();
+    ENV.wx={code:j.current.weather_code|0,temp:Math.round(j.current.temperature_2m)};}catch(e){return;}
+  let [ic,tx]=WX_TXT(ENV.wx.code); const hh=taipeiHour(); if(ENV.wx.code<=1&&(hh<5.5||hh>18.3)) ic='🌙'; $('wx').textContent=`台北 ${ENV.wx.temp??''}° ${ic} ${tx}`; applyEnv(true);}
+function setupEnv(){
+  ENV.hemi=scene.children.find(o=>o.isHemisphereLight); world.traverse(o=>{if(o.isPointLight) ENV.lights.push([o,o.intensity]);});
+  world.traverse(o=>{if(o.isMesh&&o.material?.map===TX_clock){const c=document.createElement('canvas'); c.width=c.height=256; ENV.clockTx=new THREE.CanvasTexture(c); ENV.clockTx.colorSpace=THREE.SRGBColorSpace; o.material=o.material.clone(); o.material.map=ENV.clockTx;}});
+  if(ENV.clockTx) drawClock();
+  {const N=900,p=new Float32Array(N*3); for(let i=0;i<N;i++){const u=Math.random()*6.283, v=Math.random()*.9+.08, r=800; p[i*3]=Math.cos(u)*Math.cos(v)*r; p[i*3+1]=Math.sin(v)*r; p[i*3+2]=Math.sin(u)*Math.cos(v)*r;}   // 星星
+    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(p,3));
+    ENV.stars=new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:2.2,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false})); ENV.stars.frustumCulled=false; scene.add(ENV.stars);}
+  {const N=1600,p=new Float32Array(N*6); for(let i=0;i<N;i++){const x=rr(-28,28),y=rr(0,18),z=rr(-28,28); p.set([x,y,z,x+.04,y-.55,z],i*6);}             // 雨絲(大棚底下不下雨)
+    const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(p,3));
+    ENV.rain=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0xc8d4e0,transparent:true,opacity:.62,depthWrite:false})); ENV.rain.frustumCulled=false; ENV.rain.visible=false; scene.add(ENV.rain);}
+  applyEnv(true); fetchWx(); setInterval(fetchWx,15*60000); setInterval(()=>{applyEnv(); if(ENV.clockTx) drawClock();},20000);
+}
+function envTick(dt){
+  const R=ENV.rain; if(R?.visible){const a=R.geometry.attributes.position, p=a.array, cx=camera.position.x, cz=camera.position.z;
+    for(let i=0;i<p.length;i+=6){let y=p[i+1]-dt*16; let x=p[i], z=p[i+2];
+      if(y<0||Math.abs(x-cx)>28||Math.abs(z-cz)>28){x=cx+rr(-28,28); z=cz+rr(-28,28); y=rr(8,18);}
+      const under=Math.abs(x)<VAULT.half+.6&&z>VAULT.z0-1&&z<VAULT.z1+.4&&y<archY(x)+.3;               // 大棚下面不淋雨
+      p[i]=x; p[i+1]=under?-99:y; p[i+2]=z; p[i+3]=x+.04; p[i+4]=(under?-99:y)-.55; p[i+5]=z;}
+    a.needsUpdate=true;
+    if(ENV.wx.code>=95&&Math.random()<dt*.06) ENV.flashT=.25;}                                                   // 雷雨偶爾閃電
+  if(ENV.flashT>0){ENV.flashT-=dt; ENV.hemi.intensity=ENV.hemiBase+(ENV.flashT>0&&Math.random()>.5?2.5:0); if(ENV.flashT<=0) applyEnv(true);}
+}
 function startGame(){
   buildCamColliders();
   controls.enabled=false; camera.fov=52; camera.updateProjectionMatrix(); $('ui').style.display='none'; $('title').style.display='none';
-  setupUI(); setupInput(); buildNPC(); showStart(); pollStatus(); setInterval(pollStatus,60000);
-  window.__game={setNote,setChatOff,walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay,setLamps,showLamps,showShu};
+  setupUI(); setupInput(); buildNPC(); setupEnv(); showStart(); pollStatus(); setInterval(pollStatus,60000);
+  window.__game={ENV,setNote,setChatOff,walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay,setLamps,showLamps,showShu};
   const clock=new THREE.Clock(); let t=0;
   renderer.setAnimationLoop(()=>{const dt=Math.min(.05,clock.getDelta()); t+=dt; gameTick(dt,t); animate(t); composer.render();});
 }
@@ -1709,7 +1775,7 @@ function gameTick(dt,t){
   const goingIn=tgt.distanceTo(pivot)<camera.position.distanceTo(pivot)-.05;
   if(G.camSnap){camera.position.copy(tgt); G.camSnap=false;} else camera.position.lerp(tgt,Math.min(1,dt*(goingIn?18:4)));
   camera.lookAt(pivot.x,pivot.y+.15,pivot.z);
-  netTick(dt);
+  netTick(dt); envTick(dt);
 }
 
 // ── 10.13 背景音樂:延平宮 BGM「溫馨感恩」(道長 Suno 曲庫)。循環規矩:結尾完全淡出 → 停 2 秒 → 淡入重播
