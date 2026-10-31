@@ -1670,7 +1670,7 @@ const ENV={blend:null,wx:{code:0,temp:null},rain:null,stars:null,flashT:0,hemi:n
 const ENV_P={    // 天色預設:白天 / 黃昏(原本的樣子) / 夜晚
   day:  {zen:0x3f72c4,mid:0x92b8dc,hSun:0xf2e4cc,hAnti:0xc8dae8,sunC:0xfffbe8,sunL:0xfff0d8,sunI:3.4,el:58,az:200,fog:0xc4d2de,fogD:.0034,hemiS:0xd0dff0,hemiG:0x5a4a3a,hemiI:.62,exp:.6,env:.45,lamp:.45},
   dusk: {zen:0x3a4f86,mid:0xb58f9c,hSun:0xffb85e,hAnti:0xf2c2a6,sunC:0xfff1cf,sunL:0xffb070,sunI:5.0,el:LAYOUT.sun.elevation,az:LAYOUT.sun.azimuth,fog:0xd8ac92,fogD:.0046,hemiS:0xd6c2cc,hemiG:0x4a2a1c,hemiI:.55,exp:.62,env:.42,lamp:1},
-  night:{zen:0x05081a,mid:0x111a36,hSun:0x262844,hAnti:0x1a2038,sunC:0x9fb0d8,sunL:0x8ea6d8,sunI:.55,el:40,az:140,fog:0x121624,fogD:.006,hemiS:0x46557e,hemiG:0x1a1410,hemiI:.32,exp:.8,env:.18,lamp:1.5}};
+  night:{zen:0x0a1028,mid:0x1a2448,hSun:0x343656,hAnti:0x242a48,sunC:0x9fb0d8,sunL:0x9cb2e0,sunI:1.1,el:48,az:140,fog:0x1a2030,fogD:.005,hemiS:0x6a7aa6,hemiG:0x3a2a1e,hemiI:.7,exp:1.0,env:.32,lamp:2.0}};   // 夜晚:廟埕要看得清楚
 function taipeiHour(){const q=+Q.get('hour'); if(Q.has('hour')&&!isNaN(q)) return q;
   const t=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Taipei'})); return t.getHours()+t.getMinutes()/60;}
 function skyMix(h){                                     // 依時間在三種天色間漸變
@@ -1710,6 +1710,7 @@ async function fetchWx(){const f=Q.get('wx'); if(f){ENV.wx={code:{rain:63,cloud:
     ENV.wx={code:j.current.weather_code|0,temp:Math.round(j.current.temperature_2m)};}catch(e){return;}
   let [ic,tx]=WX_TXT(ENV.wx.code); const hh=taipeiHour(); if(ENV.wx.code<=1&&(hh<5.5||hh>18.3)) ic='🌙'; $('wx').textContent=`台北 ${ENV.wx.temp??''}° ${ic} ${tx}`; applyEnv(true);}
 function setupEnv(){
+  for(const x of[-4,2.2,8.4]){const L=new THREE.PointLight(0xffc890,3.2,12,1.5); at(L,x,4.3,12.2,world);}               // 廟埕前段(天公爐一帶)補燈,晚上才看得清楚
   ENV.hemi=scene.children.find(o=>o.isHemisphereLight); world.traverse(o=>{if(o.isPointLight) ENV.lights.push([o,o.intensity]);});
   world.traverse(o=>{if(o.isMesh&&o.material?.map===TX_clock){const c=document.createElement('canvas'); c.width=c.height=256; ENV.clockTx=new THREE.CanvasTexture(c); ENV.clockTx.colorSpace=THREE.SRGBColorSpace; o.material=o.material.clone(); o.material.map=ENV.clockTx;}});
   if(ENV.clockTx) drawClock();
