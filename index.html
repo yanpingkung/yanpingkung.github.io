@@ -712,14 +712,14 @@ function buildWenchang({x,z,ry}){
   brush.add(mesh(cyl(.045,.05,1.1,12),std({color:0x8a3a1c,roughness:.35})));
   at(mesh(new THREE.ConeGeometry(.055,.26,12),std({color:0x8a3a1c,roughness:.35})),0,-.68,0,brush).rotation.x=Math.PI;
 }
-function buildTaohua({x,z,ry}){
+function buildTaohua({x,z,ry}){                                                           // 一整張高供桌:後半放神像、前面放香爐
   const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=ry; world.add(g);
-  g.add(at(mesh(box(1.5,1.2,1.15),M.granite),0,.6,0));                                  // 暗紅花崗高台座
-  const fr=mesh(new THREE.PlaneGeometry(1.2,.32),std({map:plaqueTex('桃花女神',{bg:'#4a1c16',fg:'#e7c06a',border:'#9a7434',h:260}),roughness:.35}),{cast:false}); at(fr,0,.5,1.205,g);                    // 牌子貼在前面供桌上
-  g.add(at(mesh(box(.7,.18,.55),M.stoneDark),0,1.29,0));
-  photoStatue(TX_taohua,1.0,1.0*1140/676,x,1.3,z,ry,0xd8ccbe);
-  g.add(at(mesh(box(1.1,.8,.5,1,1),M.granite),0,.4,.95));                                    // 神像前的供桌
-  smallBurner(g,0,.8,.95,.16);                                                                        // 香爐:神像正前方
+  g.add(at(mesh(box(1.5,1.1,1.7,1,1),M.granite),0,.55,.2));                                // 暗紅花崗供桌(加深)
+  const fr=mesh(new THREE.PlaneGeometry(1.2,.32),std({map:plaqueTex('桃花女神',{bg:'#4a1c16',fg:'#e7c06a',border:'#9a7434',h:260}),roughness:.35}),{cast:false}); at(fr,0,.62,1.055,g);
+  g.add(at(mesh(box(.7,.16,.55),M.stoneDark),0,1.18,-.3));                                     // 神像座
+  const wp=new THREE.Vector3(0,0,-.3).applyAxisAngle(V3(0,1,0),ry).add(V3(x,0,z));
+  photoStatue(TX_taohua,1.0,1.0*1140/676,wp.x,1.26,wp.z,ry,0xd8ccbe);
+  smallBurner(g,0,1.1,.58,.16);                                                                       // 香爐:同一桌、神像正前方
 }
 
 // ── 6.8 燈籠:左右兩大片,平掛在棚下 ───────────────────────
@@ -941,7 +941,7 @@ const SPOTS=[
    desc:'中路玄壇真君趙公明,與招寶天尊、納珍天尊、招財使者、利市仙官,合稱五路財神。'},
   {id:'wenchang',burn:[-10.78,1.14,-7.6],name:'文昌',god:'文昌帝君',x:-9.0,z:-7.6,look:[-11.4,2.0,-7.6],r:2.0,service:'文昌祈福',
    desc:'文昌帝君主掌文運功名。考試、升學、證照,可在此祈求頭腦清明、金榜題名。'},
-  {id:'taohua',burn:[-10.05,.98,9.2],name:'桃花女神',god:'桃花女神',x:-9.0,z:9.2,look:[-11,2.3,9.2],r:2.0,service:'斬桃花／求姻緣',
+  {id:'taohua',burn:[-10.42,1.28,9.2],name:'桃花女神',god:'桃花女神',x:-9.0,z:9.2,look:[-11,2.3,9.2],r:2.0,service:'斬桃花／求姻緣',
    desc:'桃花女神主人緣與姻緣。求良緣、和合,也可斬除爛桃花。'},
   {id:'notice',name:'公告欄',x:-8.5,z:13.0,look:[-10.4,1.6,13.0],r:1.9,kind:'notice'},
   {id:'deng',name:'供燈桌',x:2.2,z:-2.4,look:[2.2,.9,-4.6],r:2.0,kind:'deng'},
@@ -969,7 +969,7 @@ circO(2.2,11.2,.62); rectO(-10.4,13.0,.5,2.6); rectO(0,-16.2,22.7,.5);   // 神�
 rectO((-15.3+GATE_X0-.2)/2,18.2,(GATE_X0-.2+15.3),.5); rectO((GATE_X1+.2+12)/2,18.2,(12-GATE_X1-.2),.5); circO(GATE_X0-.1,18.2,.3); circO(GATE_X1+.1,18.2,.3); OBST.push({x:2.2,z:-8.4,r:.5,npc:true});   // 法事中的道長
 rectO(2.2,9.3,2.9,1.45); rectO(-.5,9.5,1.4,1.4); rectO(4.9,9.5,1.4,1.4); circO(.85,10.8,.5); circO(3.55,10.8,.5);   // 元寶、石獅、石將軍一對
 rectO(-.4,-4.6,.95,2.6); rectO(4.8,-4.6,.95,2.6);   // 廟埕兩張白鐵桌(DENG)
-rectO(-10.75,9.2,1.85,1.7); rectO(-11.2,-7.6,1.5,2.6);   // 桃花、文昌(柱子中間) rectO(7.4,-15.3,2.9,1.6);
+rectO(-10.8,9.2,1.75,1.6); rectO(-11.2,-7.6,1.5,2.6);   // 桃花、文昌(柱子中間) rectO(7.4,-15.3,2.9,1.6);
 circO(-12.15,-18.7,.72); rectO(-13.45,-18.7,1.3,3.7);
 for(const z of VAULT.trusses){circO(11,z,.32); circO(-11,z,.32); circO(-15.6,z,.2);}
 function walkable(x,z,r=.28){
