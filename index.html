@@ -1282,7 +1282,7 @@ function showStart(){
   document.body.appendChild(d);
   d.querySelectorAll('.looks button').forEach(b=>b.onclick=()=>{look=+b.dataset.i; d.querySelectorAll('.looks button').forEach(x=>x.classList.toggle('on',x===b)); $('cusBtn').style.cssText='width:100%;margin:-4px 0 10px;padding:10px;font-size:15px';});
   $('cusBtn').onclick=()=>showCustom(look,l=>{look=l; d.querySelectorAll('.looks button').forEach(x=>x.classList.remove('on')); $('cusBtn').style.borderColor='#f0cc72'; $('cusBtn').style.background='#3a2210';});
-  $('go').onclick=()=>{const name=($('nm').value.trim()||'善信').slice(0,8); save({name,look}); d.remove(); if(musicPref()) setMusic(true); else setMusic(false); enterGame(name,look);};
+  $('go').onclick=()=>{const name=($('nm').value.trim()||'善信').slice(0,8); if(RESERVED.test(name)){toast('這個名字保留給廟方,請換一個 🙏',3000); return;} save({name,look}); d.remove(); if(musicPref()) setMusic(true); else setMusic(false); enterGame(name,look);};
 }
 function showCustom(look,done){                                                            // 捏外型:左邊即時預覽、可轉一圈
   const o=look>=1000?decLook(look):{skin:0,eyes:0,brow:1,style:0,hair:0,outfit:0,shirt:0,pants:0,hat:0}; let tab=0, spin=true;
@@ -1351,7 +1351,7 @@ function setNote(t,force){                                                      
   else{G.noteTag.position.y=G.nameTag.position.y+.62+h/2; G.npc.g.add(G.noteTag);}
 }
 async function pollStatus(){ if(!GAME.STATUS_URL) return;
-  try{const j=await (await fetch(GAME.STATUS_URL,{cache:'no-store'})).json(); if(j.status&&j.status!==G.status) setStatus(j.status); if('note' in j) setNote(j.note||''); if(j.lamps) setLamps(j.lamps); if(j.shu) G.shu=j.shu; barKey='';}catch(e){} }
+  try{const j=await (await fetch(GAME.STATUS_URL,{cache:'no-store'})).json(); if(j.status&&j.status!==G.status) setStatus(j.status); if('note' in j) setNote(j.note||''); setChatOff(j.chat==='off'); if(j.lamps) setLamps(j.lamps); if(j.shu) G.shu=j.shu; barKey='';}catch(e){} }
 
 // ── 10.8 互動卡片 ────────────────────────────────────────
 function showDaoist(){const S=STATUS_TXT[G.status];
@@ -1545,6 +1545,8 @@ function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(G.emote?.k||
 const PHRASES=['平安','感恩','拜拜🙏','新年快樂','加油','謝謝道長','大家好','歡迎'];
 const BAD=/幹你娘|幹妳娘|幹拎娘|幹你|幹妳|幹他|幹拎|姦|靠北|靠杯|操你|操妳|他媽|他馬|媽的|你娘|妳娘|機掰|雞掰|雞巴|屌|賤人|婊|白痴|白癡|智障|腦殘|去死|垃圾|廢物|約砲|色情|裸聊|博弈|賭場|代儲|fuck|shit|bitch|dick/gi;
 function cleanTxt(t){t=String(t||'').replace(/\s+/g,' ').trim().slice(0,20); return t.replace(BAD,m=>'＊'.repeat([...m].length));}   // 髒話打星號,最多 20 字
+const RESERVED=/道長|道长|大祐|大佑|延平宮|延平宫|廟方|庙方|師父|師傅|法師|官方|管理員|客服|主委/;          // 保留給廟方的名字,防冒充
+const safeName=n=>RESERVED.test(n=String(n||''))?'善信':n;
 const spammy=t=>/https?:|www\.|\.(com|net|tw|cc|io)\b|line\.me|@\w{3,}|\d[\d\s-]{6,}/i.test(t);                       // 網址、帳號、電話不給貼
 function chatLog(name,txt){const box=$('chatlog'); if(!box) return; const d=document.createElement('div'); d.innerHTML=`<b>${esc(name)}</b>:${esc(txt)}`; box.appendChild(d);
   while(box.children.length>4) box.firstChild.remove(); setTimeout(()=>{d.style.opacity=0; setTimeout(()=>d.remove(),900);},12000);}
@@ -1578,6 +1580,7 @@ async function netStart(name,look){
 const netPos=()=>({x:+THREE.MathUtils.clamp(G.pos.x,-39.9,39.9).toFixed(2),z:+THREE.MathUtils.clamp(G.pos.z,-39.9,39.9).toFixed(2),r:+(Math.atan2(Math.sin(G.heading),Math.cos(G.heading))).toFixed(2)});
 function netSend(o){if(!NET.on) return; Object.assign(NET.rec,o); NET.be.upd(o); NET.hbT=0;}
 function netAct(kind,id){netSend({a:`${kind}:${id}:${++NET.seq%1000}`});}
+function setChatOff(off){if(G.chatOff===off) return; G.chatOff=off; const i=$('dkIn'); if(i){i.placeholder=off?'目前只開放常用語,點這裡選':'說點什麼…'; i.readOnly=off;}}
 function openChatBar(){$('dkIn').focus();}
 function setupDock(){                                                                      // 底部聊天列:像線上遊戲一樣,點一下就能打字
   const dk=$('dock'), i=$('dkIn'), qp=$('qp');
@@ -1594,7 +1597,7 @@ function setupDock(){                                                           
   visualViewport?.addEventListener('resize',()=>{if(document.activeElement===i) place();});
 }
 let sayT=0;
-function netSay(txt){txt=cleanTxt(txt); if(!txt) return; if(spammy(txt)){toast('不能貼網址、帳號或電話喔'); return;} if(Date.now()-sayT<2500){toast('說慢一點喔 🙏'); return;} sayT=Date.now();
+function netSay(txt){txt=cleanTxt(txt); if(!txt) return; if(G.chatOff&&!PHRASES.includes(txt)){toast('目前只開放常用語 🙏'); return;} if(spammy(txt)){toast('不能貼網址、帳號或電話喔'); return;} if(Date.now()-sayT<2500){toast('說慢一點喔 🙏'); return;} sayT=Date.now();
   bubble(G.player,txt); chatLog(loadSave()?.name||'我',txt); netSend({s:`${txt}:${++NET.seq%1000}`});}
 const netNow=()=>Date.now()+NET.off;
 function netUp(id,r){
@@ -1602,11 +1605,11 @@ function netUp(id,r){
   if(netNow()-(r.t||0)>90000) return netDel(id);
   let p=NET.peers.get(id);
   if(p&&(p.n!==r.n||p.l!==r.l)){world.remove(p.A.g); NET.peers.delete(id); p=null;}
-  if(!p){const A=makeAvatar(lookOf(r.l),String(r.n||'善信').slice(0,12)); A.g.position.set(r.x,0,r.z); A.g.rotation.y=r.r; world.add(A.g);
+  if(!p){const A=makeAvatar(lookOf(r.l),safeName(String(r.n||'善信').slice(0,12))); A.g.position.set(r.x,0,r.z); A.g.rotation.y=r.r; world.add(A.g);
     p={A,n:r.n,l:r.l,a:r.a,s:r.s,act:null,phase:0}; NET.peers.set(id,p);}
   else{
     if(r.a&&r.a!==p.a){const [k,sid]=r.a.split(':'); const sp=SPOTS.find(x=>x.id===sid); if(sp&&['bow','incense','jiao'].includes(k)) p.act={kind:k,sp,t:0}; if(k==='emote') p.emote=sid==='stand'?null:{k:sid,t:0};}
-    if(r.s&&r.s!==p.s){const t=cleanTxt(r.s.slice(0,r.s.lastIndexOf(':'))); if(t&&!spammy(t)){bubble(p.A,t); chatLog(p.n||'善信',t);}}
+    if(r.s&&r.s!==p.s){const t=cleanTxt(r.s.slice(0,r.s.lastIndexOf(':'))); if(t&&!spammy(t)&&!(G.chatOff&&!PHRASES.includes(t))){bubble(p.A,t); chatLog(safeName(p.n||'善信'),t);}}
     p.a=r.a; p.s=r.s;
   }
   p.tx=r.x; p.tz=r.z; p.tr=r.r; p.t=r.t; netCount();
@@ -1656,7 +1659,7 @@ function startGame(){
   buildCamColliders();
   controls.enabled=false; camera.fov=52; camera.updateProjectionMatrix(); $('ui').style.display='none'; $('title').style.display='none';
   setupUI(); setupInput(); buildNPC(); showStart(); pollStatus(); setInterval(pollStatus,60000);
-  window.__game={setNote,walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay,setLamps,showLamps,showShu};
+  window.__game={setNote,setChatOff,walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay,setLamps,showLamps,showShu};
   const clock=new THREE.Clock(); let t=0;
   renderer.setAnimationLoop(()=>{const dt=Math.min(.05,clock.getDelta()); t+=dt; gameTick(dt,t); animate(t); composer.render();});
 }
