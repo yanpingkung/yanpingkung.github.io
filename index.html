@@ -889,6 +889,8 @@ window.__vframe=(k,u,t)=>{const s=VSHOTS[k],q=Math.min(1,Math.max(0,(u-.1)/.8)),
    10. 遊戲模式(非錄影時):建角色 → 走進延平宮參拜、服務處、道長狀態
    ═══════════════════════════════════════════════════════════ */
 const GAME={
+  FIREBASE:{apiKey:'AIzaSyBkjlZ15iM7iGeXlbnd4jQ7_zRYWfqTbHE',authDomain:'yanping-online.firebaseapp.com',databaseURL:'https://yanping-online-default-rtdb.asia-southeast1.firebasedatabase.app',
+    projectId:'yanping-online',storageBucket:'yanping-online.firebasestorage.app',messagingSenderId:'271190196229',appId:'1:271190196229:web:77e60c91f1ac1b35b89c6c'},   // firebaseConfig;改成 null 就關閉多人連線
   ENDPOINT:'https://script.google.com/macros/s/AKfycbx0aLK95KGfwEOXsj_Klaaa-hDEnblplJkP4wbuXUydkwHeKeCWtIW1OkG7Dpwwd3beHA/exec',                                    // 服務處送出的 Apps Script 網址(空白=示範模式,不送出)
   STATUS_URL:'https://script.google.com/macros/s/AKfycbx0aLK95KGfwEOXsj_Klaaa-hDEnblplJkP4wbuXUydkwHeKeCWtIW1OkG7Dpwwd3beHA/exec',                                  // 道長狀態來源 JSON {status:'法事中'};空白=看網址 ?status=
   LINE:'https://lin.ee/pHdZu3L',
@@ -1085,6 +1087,7 @@ function setupUI(){
   #hud{top:max(10px,env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
   #hud>*{pointer-events:auto} #hud .t{font-size:17px;letter-spacing:.3em;color:#ecc86a;text-shadow:0 2px 8px #000;white-space:nowrap;flex-shrink:0}
   #hud .r .gbtn{padding:7px 10px;font-size:13px;letter-spacing:.04em}
+  #hud .r #sayBtn{position:fixed;right:20px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 30px);width:56px;height:56px;border-radius:50%;padding:0;font-size:24px;background:rgba(40,22,12,.82)}
   #hud .t small{display:block;font-size:11px;letter-spacing:.15em;color:#e9d8b4;opacity:.85}
   #hud .r{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
   #prompt{left:0;right:0;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 128px);text-align:center;pointer-events:none;font-size:15px;
@@ -1115,13 +1118,14 @@ function setupUI(){
   @media (max-width:520px){#bar{padding:0 10px 0 146px;justify-content:flex-end} .gbtn{padding:8px 11px;font-size:13px}}`;
   document.head.appendChild(css);
   const div=(id,html='')=>{const d=document.createElement('div'); d.id=id; d.className='gx'; d.innerHTML=html; document.body.appendChild(d); return d;};
-  div('hud',`<div class="t">延平宮<small id="prog">參拜 0 / 7</small></div><div class="r">
-    <button class="gbtn" id="muBtn">♪ 音樂</button><button class="gbtn" id="nbBtn">公告</button><button class="gbtn" id="stBtn"><span class="dot"></span><span>道長</span></button><button class="gbtn" id="menuBtn">☰</button></div>`);
+  div('hud',`<div class="t">延平宮<small id="prog">參拜 0 / 7</small><small id="ol" style="display:none">線上 1 人</small></div><div class="r">
+    <button class="gbtn" id="sayBtn" style="display:none">💬</button><button class="gbtn" id="muBtn">♪ 音樂</button><button class="gbtn" id="nbBtn">公告</button><button class="gbtn" id="stBtn"><span class="dot"></span><span>道長</span></button><button class="gbtn" id="menuBtn">☰</button></div>`);
   div('prompt'); div('bar'); div('joy','<i></i>'); div('toast'); div('modal','<div class="card"></div>');
   document.getElementById('stBtn').onclick=()=>showDaoist();
   document.getElementById('nbBtn').onclick=()=>showNotice();
   document.getElementById('muBtn').onclick=()=>setMusic(!MUSIC.on);
   document.getElementById('menuBtn').onclick=()=>showMenu();
+  document.getElementById('sayBtn').onclick=()=>showSay();
 }
 const $=id=>document.getElementById(id);
 let toastT=0;
@@ -1155,6 +1159,7 @@ function enterGame(name,look){
   try{G.done=new Set(JSON.parse(localStorage.getItem('yp_done')||'[]'));}catch(e){}
   updateProg(); let off=null; try{off=localStorage.getItem('yp_notice');}catch(e){}
   if(off!=='off') showNotice(true); else toast('入廟先到<b>天公爐</b>拜天公 🙏',3600);
+  netStart(name,look);
 }
 function updateProg(){$('prog').textContent=`參拜 ${[...G.done].filter(x=>DEITIES.includes(x)).length} / ${DEITIES.length}`;}
 function markDone(id){G.done.add(id); try{localStorage.setItem('yp_done',JSON.stringify([...G.done]));}catch(e){} updateProg();
@@ -1263,7 +1268,7 @@ function showMenu(){const list=[...SPOTS,HUYE].filter(s=>DEITIES.includes(s.id))
 
 // ── 10.9 動作:合掌、點香、擲筊 ───────────────────────────
 function faceTo(p){G.heading=Math.atan2(p[0]-G.pos.x,p[2]-G.pos.z);}
-function doAction(kind,sp){ if(G.act) return; faceTo(sp.look); G.act={kind,sp,t:0,res:null}; renderBar(); }
+function doAction(kind,sp){ if(G.act) return; faceTo(sp.look); G.act={kind,sp,t:0,res:null}; renderBar(); netAct(kind,sp.id); }
 const planted={};                                                                        // 爐上已插的香(每爐最多留 12 支)
 function plantIncense(sp){const b=sp.burn; if(!b) return; const list=planted[sp.id]||(planted[sp.id]=[]);
   if(!list.length) smokeSources.push(V3(b[0],b[1]+.42,b[2]));
@@ -1323,7 +1328,85 @@ function renderBar(){const sp=G.spot, key=(sp?sp.id:'')+(G.act?'!':'')+(G.spot?.
   B(sp.id==='tiangong'?'拜天公':'合掌拜拜',()=>doAction('bow',sp),!G.done.has(sp.id)); B('點一炷香',()=>doAction('incense',sp)); if(!sp.noJiao) B('擲筊',()=>doAction('jiao',sp)); if(sp.id==='main') B('拜虎爺',()=>doAction('bow',HUYE)); B(sp.id==='tiangong'?'怎麼拜':'神明介紹',()=>showGod(sp));
 }
 
-// ── 10.12 主迴圈 ─────────────────────────────────────────
+// ── 10.12 多人連線(Firebase Realtime Database;?net=local 用 BroadcastChannel 給 QA)──
+const PHRASES=['平安','感恩','拜拜🙏','新年快樂','加油','謝謝道長'];
+const NET={on:false,local:Q.get('net')==='local',id:'',be:null,peers:new Map(),last:'',sendT:0,hbT:0,sweepT:0,seq:0,off:0,rec:null,count:1};
+const rid=()=>Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>'abcdefghijkmnpqrstuvwxyz23456789'[b&31]).join('');
+NET.id=(()=>{if(NET.local) return rid(); try{let v=localStorage.getItem('yp_net_id'); if(!v||v.length!==12){v=rid(); localStorage.setItem('yp_net_id',v);} return v;}catch(e){return rid();}})();
+async function fbBackend(cfg){
+  const V='https://www.gstatic.com/firebasejs/10.12.2/';
+  const [{initializeApp},D]=await Promise.all([import(V+'firebase-app.js'),import(V+'firebase-database.js')]);
+  const db=D.getDatabase(initializeApp(cfg)), root=D.ref(db,'p'), me=D.ref(db,'p/'+NET.id);
+  D.onValue(D.ref(db,'.info/serverTimeOffset'),v=>NET.off=v.val()||0);
+  D.onChildAdded(root,v=>netUp(v.key,v.val())); D.onChildChanged(root,v=>netUp(v.key,v.val())); D.onChildRemoved(root,v=>netDel(v.key));
+  return {put:r=>{D.onDisconnect(me).remove(); return D.set(me,{...r,t:D.serverTimestamp()});}, upd:r=>D.update(me,{...r,t:D.serverTimestamp()}), del:()=>D.remove(me)};
+}
+function localBackend(){                                                                    // 同一個瀏覽器兩個分頁互看(只給 QA)
+  const bc=new BroadcastChannel('yp_net'); let mine=null; const send=()=>mine&&bc.postMessage({op:'up',id:NET.id,r:mine});
+  bc.onmessage=e=>{const m=e.data; if(m.op==='hello') send(); else if(m.op==='del') netDel(m.id); else netUp(m.id,m.r);};
+  addEventListener('pagehide',()=>bc.postMessage({op:'del',id:NET.id})); bc.postMessage({op:'hello'});
+  return {put:r=>{mine={...r,t:Date.now()}; send();}, upd:r=>{if(!mine) return; mine={...mine,...r,t:Date.now()}; send();}, del:()=>{mine=null; bc.postMessage({op:'del',id:NET.id});}};
+}
+async function netStart(name,look){
+  NET.rec={n:String(name).slice(0,12),l:look,...netPos()};
+  if(!NET.be){
+    if(!NET.local&&!GAME.FIREBASE) return;
+    try{NET.be=NET.local?localBackend():await fbBackend(GAME.FIREBASE);}catch(e){console.warn('多人連線失敗',e); return;}
+    NET.on=true; $('ol').style.display=''; $('sayBtn').style.display='';
+    document.addEventListener('visibilitychange',()=>{if(!NET.rec) return; if(document.hidden) NET.be.del(); else NET.be.put({...NET.rec,...netPos()});});
+  }
+  NET.be.put(NET.rec); netCount();
+}
+const netPos=()=>({x:+THREE.MathUtils.clamp(G.pos.x,-39.9,39.9).toFixed(2),z:+THREE.MathUtils.clamp(G.pos.z,-39.9,39.9).toFixed(2),r:+(Math.atan2(Math.sin(G.heading),Math.cos(G.heading))).toFixed(2)});
+function netSend(o){if(!NET.on) return; Object.assign(NET.rec,o); NET.be.upd(o); NET.hbT=0;}
+function netAct(kind,id){netSend({a:`${kind}:${id}:${++NET.seq%1000}`});}
+function netSay(txt){bubble(G.player,txt); netSend({s:`${txt}:${++NET.seq%1000}`});}
+const netNow=()=>Date.now()+NET.off;
+function netUp(id,r){
+  if(!r||id===NET.id) return netCount();
+  if(netNow()-(r.t||0)>90000) return netDel(id);
+  let p=NET.peers.get(id);
+  if(p&&(p.n!==r.n||p.l!==r.l)){world.remove(p.A.g); NET.peers.delete(id); p=null;}
+  if(!p){const A=makeAvatar(LOOKS[r.l]||LOOKS[0],String(r.n||'善信').slice(0,12)); A.g.position.set(r.x,0,r.z); A.g.rotation.y=r.r; world.add(A.g);
+    p={A,n:r.n,l:r.l,a:r.a,s:r.s,act:null,phase:0}; NET.peers.set(id,p);}
+  else{
+    if(r.a&&r.a!==p.a){const [k,sid]=r.a.split(':'); const sp=[...SPOTS,HUYE].find(x=>x.id===sid); if(sp&&['bow','incense','jiao'].includes(k)) p.act={kind:k,sp,t:0};}
+    if(r.s&&r.s!==p.s) bubble(p.A,r.s.slice(0,r.s.lastIndexOf(':')));
+    p.a=r.a; p.s=r.s;
+  }
+  p.tx=r.x; p.tz=r.z; p.tr=r.r; p.t=r.t; netCount();
+}
+function netDel(id){const p=NET.peers.get(id); if(p){world.remove(p.A.g); NET.peers.delete(id);} netCount();}
+function netCount(){NET.count=1+NET.peers.size; const e=$('ol'); if(e) e.textContent=`線上 ${NET.count} 人`;}
+function bubble(A,txt){if(!A) return; if(A.bub) A.g.remove(A.bub);
+  A.bub=tagSprite(txt,{fg:'#3a2210',bg:'rgba(255,246,224,.94)',scale:1.15}); A.bub.position.y=2.42; A.g.add(A.bub); A.bubT=4;}
+function tickBubble(A,dt){if(A?.bub&&(A.bubT-=dt)<=0){A.g.remove(A.bub); A.bub.material.map.dispose(); A.bub.material.dispose(); A.bub=null;}}
+function remoteAct(p,dt){const a=p.act; if(!a) return null; a.t+=dt; const t=a.t, P={walk:0};
+  if(a.kind==='bow'){P.pray=Math.min(1,t*3); P.bow=Math.max(0,Math.sin(Math.max(0,t-.4)*Math.PI))*(a.sp.id==='huye'?.85:.42)*(t<3.4?1:0); if(t>3.6) p.act=null;}
+  if(a.kind==='incense'){P.pray=Math.min(1,t*3); P.bow=t>1.2&&t<4.2?Math.max(0,Math.sin((t-1.2)*Math.PI))*.38:0; if(t>4.6){p.act=null; plantIncense(a.sp);}}
+  if(a.kind==='jiao'){P.pray=t<1.6?Math.min(1,t*3):Math.max(0,1-(t-1.6)*4); P.bow=t<1.6?.12:0; if(t>3.2) p.act=null;}
+  return P;}
+function netTick(dt){
+  tickBubble(G.player,dt); if(!NET.on) return;
+  if((NET.sendT+=dt)>=.2){NET.sendT=0; const q=netPos(), k=`${q.x},${q.z},${q.r}`; if(k!==NET.last){NET.last=k; netSend(q);}}
+  if((NET.hbT+=dt)>=20) netSend({});                                                         // 心跳:閒置也每 20 秒更新 t
+  const sweep=(NET.sweepT+=dt)>=.5; if(sweep) NET.sweepT=0;
+  const list=[...NET.peers].map(([id,p])=>(p.d=Math.hypot(p.tx-G.pos.x,p.tz-G.pos.z),[id,p]));
+  if(sweep){list.sort((a,b)=>a[1].d-b[1].d).forEach(([id,p],i)=>{if(netNow()-(p.t||0)>90000) return netDel(id); p.A.g.visible=i<30;});}
+  for(const [,p] of list){const g=p.A.g; if(!g.visible) continue;
+    const ox=g.position.x, oz=g.position.z, k=Math.min(1,dt*8);
+    g.position.x+=(p.tx-ox)*k; g.position.z+=(p.tz-oz)*k;
+    let dr=p.tr-g.rotation.y; dr=Math.atan2(Math.sin(dr),Math.cos(dr)); g.rotation.y+=dr*Math.min(1,dt*10);
+    const v=Math.hypot(g.position.x-ox,g.position.z-oz)/Math.max(dt,1e-3), walk=Math.min(1,v/3);
+    if(walk>.05) p.phase+=dt*9*walk;
+    const P=remoteAct(p,dt); pose(p.A,P?{...P,phase:p.phase}:{walk:walk>.05?walk:0,phase:p.phase}); tickBubble(p.A,dt);}
+}
+function showSay(){modal(`<h3>說句話</h3><p class="note">選一句,頭上會出現對話泡泡,線上的人都看得到。</p>
+  <div class="acts" style="justify-content:flex-start">${PHRASES.map(t=>`<button class="gbtn" data-t="${t}">${t}</button>`).join('')}</div>
+  <div class="acts"><button class="gbtn" data-close>關閉</button></div>`,
+  m=>m.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{closeModal(); netSay(b.dataset.t);}));}
+
+// ── 10.13 主迴圈 ─────────────────────────────────────────
 const CAM_RC=new THREE.Raycaster(), CAM_COLL=[];
 function buildCamColliders(){ const bb=new THREE.Box3(), sz=new THREE.Vector3(); world.updateMatrixWorld(true);
   world.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||!o.visible) return; const m=Array.isArray(o.material)?o.material[0]:o.material;
@@ -1334,7 +1417,7 @@ function startGame(){
   buildCamColliders();
   controls.enabled=false; camera.fov=52; camera.updateProjectionMatrix(); $('ui').style.display='none'; $('title').style.display='none';
   setupUI(); setupInput(); buildNPC(); showStart(); pollStatus(); setInterval(pollStatus,60000);
-  window.__game={walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu};
+  window.__game={walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay};
   const clock=new THREE.Clock(); let t=0;
   renderer.setAnimationLoop(()=>{const dt=Math.min(.05,clock.getDelta()); t+=dt; gameTick(dt,t); animate(t); composer.render();});
 }
@@ -1380,6 +1463,7 @@ function gameTick(dt,t){
   const goingIn=tgt.distanceTo(pivot)<camera.position.distanceTo(pivot)-.05;
   if(G.camSnap){camera.position.copy(tgt); G.camSnap=false;} else camera.position.lerp(tgt,Math.min(1,dt*(goingIn?18:4)));
   camera.lookAt(pivot.x,pivot.y+.15,pivot.z);
+  netTick(dt);
 }
 
 // ── 10.13 背景音樂:延平宮 BGM「溫馨感恩」(道長 Suno 曲庫)。循環規矩:結尾完全淡出 → 停 2 秒 → 淡入重播
