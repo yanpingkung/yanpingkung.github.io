@@ -1550,7 +1550,7 @@ function cleanTxt(t){t=String(t||'').replace(/\s+/g,' ').trim().slice(0,20); ret
 const RESERVED=/道長|道长|大祐|大佑|延平宮|延平宫|廟方|庙方|師父|師傅|法師|官方|管理員|客服|主委/;          // 保留給廟方的名字,防冒充
 const safeName=n=>RESERVED.test(n=String(n||''))?'善信':n;
 const spammy=t=>/https?:|www\.|\.(com|net|tw|cc|io)\b|line\.me|@\w{3,}|\d[\d\s-]{6,}/i.test(t);                       // 網址、帳號、電話不給貼
-function chatLog(name,txt){const box=$('chatlog'); if(!box) return; const d=document.createElement('div'); d.innerHTML=`<b>${esc(name)}</b>:${esc(txt)}`; box.appendChild(d);
+function chatLog(name,txt,dz){const box=$('chatlog'); if(!box) return; const d=document.createElement('div'); d.innerHTML=`<b${dz?' style="color:#ffd77a"':''}>${dz?'🛕 ':''}${esc(name)}</b>:${esc(txt)}`; if(dz) d.style.border='1px solid #c89a46'; box.appendChild(d);
   while(box.children.length>4) box.firstChild.remove(); setTimeout(()=>{d.style.opacity=0; setTimeout(()=>d.remove(),900);},12000);}
 const NET={on:false,local:Q.get('net')==='local',id:'',be:null,peers:new Map(),last:'',sendT:0,hbT:0,sweepT:0,seq:0,off:0,rec:null,count:1};
 const rid=()=>Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>'abcdefghijkmnpqrstuvwxyz23456789'[b&31]).join('');
@@ -1603,6 +1603,7 @@ function netSay(txt){txt=cleanTxt(txt); if(!txt) return; if(G.chatOff&&!PHRASES.
   bubble(G.player,txt); chatLog(loadSave()?.name||'我',txt); netSend({s:`${txt}:${++NET.seq%1000}`});}
 const netNow=()=>Date.now()+NET.off;
 function netUp(id,r){
+  if(id==='__dz__') return dzMsg(r);                                                        // 道長本人發言(只有後端能寫)
   if(!r||id===NET.id) return netCount();
   if(netNow()-(r.t||0)>90000) return netDel(id);
   let p=NET.peers.get(id);
@@ -1616,6 +1617,13 @@ function netUp(id,r){
   }
   p.tx=r.x; p.tz=r.z; p.tr=r.r; p.t=r.t; netCount();
 }
+function dzMsg(r){if(!r?.s||r.s===NET.dzS) return; const first=NET.dzS===undefined; NET.dzS=r.s;
+  if(first&&netNow()-(r.t||0)>120000) return;                                               // 剛進來不重播太舊的話
+  const t=r.s.slice(0,r.s.lastIndexOf(':')); chatLog('大祐道長',t,true);
+  if(G.dzBub){G.dzBub.parent?.remove(G.dzBub);} const b=G.dzBub=bubbleSprite('道長:'+t), h=b.userData.h;
+  if(G.status==='外出'){b.position.copy(G.awayTag.position).add(V3(0,.32+h/2+(G.noteTag?G.noteTag.userData.h+.1:0),0)); world.add(b);}
+  else{b.position.y=G.nameTag.position.y+.62+h/2+(G.noteTag?G.noteTag.userData.h+.1:0); G.npc.g.add(b);}
+  clearTimeout(G.dzT); G.dzT=setTimeout(()=>{b.parent?.remove(b);},6000+[...t].length*250);}
 function netDel(id){const p=NET.peers.get(id); if(p){world.remove(p.A.g); NET.peers.delete(id);} netCount();}
 function netCount(){NET.count=1+NET.peers.size; const e=$('ol'); if(e) e.textContent=`線上 ${NET.count} 人`;}
 function bubble(A,txt){if(!A) return; if(A.bub) A.g.remove(A.bub);
