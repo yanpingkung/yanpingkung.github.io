@@ -1169,7 +1169,7 @@ function setupUI(){
   #hud{top:max(10px,env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
   #hud>*{pointer-events:auto} #hud .t{font-size:17px;letter-spacing:.3em;color:#ecc86a;text-shadow:0 2px 8px #000;white-space:nowrap;flex-shrink:0}
   #hud .r .gbtn{padding:7px 10px;font-size:13px;letter-spacing:.04em}
-  body.desk #joy{display:none} body.desk #bar{counter-reset:k;padding:0 20px 34px} body.desk #bar .gbtn::before{counter-increment:k;content:counter(k);display:inline-block;min-width:16px;margin-right:6px;padding:0 4px;border:1px solid currentColor;border-radius:4px;font-size:11px;opacity:.7}
+  body.desk #joy{display:none} body.desk #bar{counter-reset:k;padding:0 20px;bottom:96px} body.desk #bar .gbtn::before{counter-increment:k;content:counter(k);display:inline-block;min-width:16px;margin-right:6px;padding:0 4px;border:1px solid currentColor;border-radius:4px;font-size:11px;opacity:.7}
   #keyhint{display:none;position:fixed;left:14px;bottom:14px;font-size:12px;color:#e9d8b4;opacity:.75;pointer-events:auto;cursor:pointer;text-shadow:0 1px 4px #000;z-index:3} body.desk #keyhint{display:block}
   #hud .r #sayBtn,#hud .r #emoBtn{position:fixed;right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 58px);padding:10px 16px;font-size:16px;letter-spacing:.1em;border-radius:999px;background:rgba(150,60,24,.9);border-color:#ecc86a;color:#fff3d6;box-shadow:0 0 14px rgba(236,200,106,.45)}
   #hud .r #emoBtn{top:calc(max(10px,env(safe-area-inset-top)) + 112px);background:rgba(40,22,12,.85);box-shadow:none}
@@ -1177,13 +1177,21 @@ function setupUI(){
   #chatlog div{background:rgba(20,10,6,.62);border-radius:8px;padding:3px 9px;margin-bottom:4px;transition:opacity .8s;width:fit-content;max-width:100%;word-break:break-all}
   #chatlog b{color:#ecc86a;font-weight:normal}
   #chatIn{display:flex;gap:8px;margin-top:6px} #chatIn input{flex:1}
-  #chatbar{display:none;position:fixed;left:50%;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 70px);transform:translateX(-50%);width:min(420px,calc(100vw - 32px));z-index:5}
-  #chatbar input{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:11px 16px;border-radius:999px;border:1px solid #ecc86a;background:rgba(30,16,10,.92);color:#fff3d6;outline:none;box-shadow:0 0 16px rgba(236,200,106,.4)}
+  #sayBtn,#emoBtn{display:none!important}
+  #dock{position:fixed;left:142px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:6px;align-items:center}
+  #dock input{flex:1;min-width:0;box-sizing:border-box;font:inherit;font-size:16px;padding:10px 14px;border-radius:999px;border:1px solid #c89a46;background:rgba(30,16,10,.85);color:#fff3d6;outline:none}
+  #dock input:focus{border-color:#ecc86a;box-shadow:0 0 14px rgba(236,200,106,.45)}
+  #dock button{flex-shrink:0;font:inherit;font-size:15px;height:42px;min-width:42px;padding:0 12px;border-radius:999px;border:1px solid #c89a46;background:rgba(40,22,12,.9);color:#fff3d6}
+  #dock #dkSend{display:none;background:linear-gradient(#e2b04e,#a8742a);color:#2a1608;border-color:#f0cc72}
+  #dock.typing #dkSend{display:block} #dock.typing #dkEmo{display:none}
+  #qp{position:fixed;left:12px;right:12px;z-index:5;display:none;gap:6px;overflow-x:auto;padding-bottom:2px} #qp.on{display:flex}
+  #qp button{flex-shrink:0;font:inherit;font-size:14px;padding:7px 12px;border-radius:999px;border:1px solid #8a6a3a;background:rgba(30,16,10,.9);color:#f6e3b3}
+  body.desk #dock{left:50%;right:auto;width:440px;transform:translateX(-50%);bottom:40px}
   #hud .t small{display:block;font-size:11px;letter-spacing:.15em;color:#e9d8b4;opacity:.85}
   #hud .r{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
-  #prompt{left:0;right:0;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 128px);text-align:center;pointer-events:none;font-size:15px;
+  #prompt{left:0;right:0;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 150px);text-align:center;pointer-events:none;font-size:15px;
     letter-spacing:.15em;text-shadow:0 2px 6px #000;opacity:0;transition:opacity .3s}
-  #bar{left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:0 96px 0 120px}
+  #bar{left:0;right:0;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 52px);display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:0 12px 0 142px}
   #joy{left:22px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 4px);width:112px;height:112px;border-radius:50%;
     background:rgba(30,16,10,.35);border:1px solid rgba(214,170,84,.45);touch-action:none}
   #joy i{position:absolute;left:36px;top:36px;width:40px;height:40px;border-radius:50%;background:rgba(236,200,106,.75)}
@@ -1218,11 +1226,12 @@ function setupUI(){
   const div=(id,html='')=>{const d=document.createElement('div'); d.id=id; d.className='gx'; d.innerHTML=html; document.body.appendChild(d); return d;};
   div('hud',`<div class="t">延平宮<small id="prog">參拜 0 / 7</small><small id="ol" style="display:none">線上 1 人</small></div><div class="r">
     <button class="gbtn" id="sayBtn" style="display:none">💬 聊天</button><button class="gbtn" id="emoBtn">🙋 動作</button><button class="gbtn" id="muBtn">♪ 音樂</button><button class="gbtn" id="nbBtn">公告</button><button class="gbtn" id="stBtn"><span class="dot"></span><span>道長</span></button><button class="gbtn" id="menuBtn">☰</button></div>`);
-  div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · Enter 聊天 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('chatlog'); div('chatbar','<input id="cbIn" maxlength="20" placeholder="說點什麼… (Enter 送出、Esc 取消)" autocomplete="off" enterkeyhint="send">'); div('modal','<div class="card"></div>');
+  div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · Enter 聊天 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('chatlog'); div('qp'); div('dock','<input id="dkIn" maxlength="20" placeholder="說點什麼…" autocomplete="off" enterkeyhint="send"><button id="dkSend">送出</button><button id="dkEmo">🙋 動作</button>'); div('modal','<div class="card"></div>');
   document.getElementById('stBtn').onclick=()=>showDaoist();
   document.getElementById('nbBtn').onclick=()=>showNotice();
   document.getElementById('muBtn').onclick=()=>setMusic(!MUSIC.on);
   document.getElementById('menuBtn').onclick=()=>showMenu();
+  setupDock();
   document.getElementById('sayBtn').onclick=()=>showSay(); document.getElementById('emoBtn').onclick=()=>showEmotes();
 }
 const $=id=>document.getElementById(id);
@@ -1563,9 +1572,21 @@ async function netStart(name,look){
 const netPos=()=>({x:+THREE.MathUtils.clamp(G.pos.x,-39.9,39.9).toFixed(2),z:+THREE.MathUtils.clamp(G.pos.z,-39.9,39.9).toFixed(2),r:+(Math.atan2(Math.sin(G.heading),Math.cos(G.heading))).toFixed(2)});
 function netSend(o){if(!NET.on) return; Object.assign(NET.rec,o); NET.be.upd(o); NET.hbT=0;}
 function netAct(kind,id){netSend({a:`${kind}:${id}:${++NET.seq%1000}`});}
-function openChatBar(){if(!NET.on) return toast('連線中,稍後再試'); const bar=$('chatbar'), i=$('cbIn'); bar.style.display='block'; i.value=''; i.focus();
-  i.onkeydown=e=>{e.stopPropagation(); if(e.key==='Enter'){e.preventDefault(); const v=i.value; bar.style.display='none'; i.blur(); if(v.trim()) netSay(v);} else if(e.key==='Escape'){bar.style.display='none'; i.blur();}};
-  i.onblur=()=>setTimeout(()=>bar.style.display='none',100);}
+function openChatBar(){$('dkIn').focus();}
+function setupDock(){                                                                      // 底部聊天列:像線上遊戲一樣,點一下就能打字
+  const dk=$('dock'), i=$('dkIn'), qp=$('qp');
+  qp.innerHTML=PHRASES.map(t=>`<button data-t="${t}">${t}</button>`).join('');
+  const place=()=>{const vv=visualViewport, kb=vv?Math.max(0,innerHeight-vv.height-vv.offsetTop):0;   // 手機鍵盤彈出時跟著往上
+    dk.style.bottom=kb>60?(kb+8)+'px':''; qp.style.bottom=(kb>60?kb+8:dk.getBoundingClientRect().height+(parseFloat(getComputedStyle(dk).bottom)||12))+(kb>60?52:8)+'px';};
+  const send=()=>{const v=i.value; i.value=''; if(v.trim()) netSay(v); i.blur();};
+  i.onfocus=()=>{if(!NET.on){i.blur(); return toast('連線中,稍後再試');} dk.classList.add('typing'); qp.classList.add('on'); place();};
+  i.onblur=()=>setTimeout(()=>{if(document.activeElement===i) return; dk.classList.remove('typing'); qp.classList.remove('on'); dk.style.bottom='';},150);
+  i.onkeydown=e=>{e.stopPropagation(); if(e.key==='Enter'){e.preventDefault(); send();} else if(e.key==='Escape') i.blur();};
+  $('dkSend').onpointerdown=e=>{e.preventDefault(); send();};
+  qp.onpointerdown=e=>{const b=e.target.closest('[data-t]'); if(!b) return; e.preventDefault(); i.value=''; netSay(b.dataset.t); i.blur();};
+  $('dkEmo').onclick=()=>showEmotes();
+  visualViewport?.addEventListener('resize',()=>{if(document.activeElement===i) place();});
+}
 let sayT=0;
 function netSay(txt){txt=cleanTxt(txt); if(!txt) return; if(spammy(txt)){toast('不能貼網址、帳號或電話喔'); return;} if(Date.now()-sayT<2500){toast('說慢一點喔 🙏'); return;} sayT=Date.now();
   bubble(G.player,txt); chatLog(loadSave()?.name||'我',txt); netSend({s:`${txt}:${++NET.seq%1000}`});}
