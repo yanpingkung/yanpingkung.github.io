@@ -1079,13 +1079,13 @@ function bubbleSprite(text){                                                    
 }
 function makeAvatar(L,name,{daoist=false}={}){
   const g=new THREE.Group(), mat=c=>std({color:c,roughness:.72});
-  const skin=mat(0xf0cfae), shirt=mat(L.shirt), pants=mat(L.pants), hair=mat(L.hair), shoe=mat(0x1a1412), dark=mat(0x15110f);
+  const skin=mat(L.skin??0xf0cfae), shirt=mat(L.shirt), pants=mat(L.pants), hair=mat(L.hair), shoe=mat(0x1a1412), dark=mat(0x15110f);
   const B=(w,h,d,m)=>mesh(new THREE.BoxGeometry(w,h,d),m);
   const leg=sx=>{const p=new THREE.Group(); p.position.set(sx*.13,.66,0); g.add(p);
     at(B(.19,.6,.21,pants),0,-.3,0,p); at(B(.21,.1,.29,shoe),0,-.61,.04,p); return p;};
   const legL=leg(-1), legR=leg(1);
   const upper=new THREE.Group(); upper.position.y=.66; g.add(upper);
-  if(daoist){ at(mesh(new THREE.CylinderGeometry(.28,.37,.6,18),shirt),0,.38,0,g); }        // 道袍下襬
+  const skirt=daoist||L.robe?at(mesh(new THREE.CylinderGeometry(.28,.37,.6,18),shirt),0,.38,0,g):null;        // 道袍/長袍下襬
   at(B(.52,.62,.3,shirt),0,.31,0,upper);
   if(daoist){ at(B(.1,.6,.02,dark),0,.31,.16,upper); at(B(.14,.08,.02,mat(0xb89a6a)),0,.58,.165,upper); }
   const arm=sx=>{const p=new THREE.Group(); p.position.set(sx*.34,.56,0); upper.add(p);
@@ -1094,26 +1094,35 @@ function makeAvatar(L,name,{daoist=false}={}){
   const armL=arm(-1), armR=arm(1);
   const head=new THREE.Group(); head.position.y=.86; upper.add(head);
   at(mesh(sph(.23,22,16),skin),0,0,0,head).scale.set(1,1.05,.96);
-  for(const sx of[-1,1]) at(mesh(sph(.024,8,6),dark),sx*.08,.02,.215,head);
+  for(const sx of[-1,1]){const e=L.eyes|0;                                                          // 眼睛:圓眼/笑眼/閉目/大眼
+    if(e===1){const a=at(mesh(new THREE.TorusGeometry(.026,.008,5,10,Math.PI),dark),sx*.08,.01,.218,head);}
+    else if(e===2) at(B(.06,.012,.01,dark),sx*.08,.015,.22,head);
+    else at(mesh(sph(e===3?.038:.024,10,8),dark),sx*.08,.02,.212,head);
+    if(L.brow) at(B(.075,L.brow===2?.026:.013,.012,dark),sx*.085,.095,.21,head).rotation.z=sx*-.12;}
   if(daoist){
     at(mesh(new THREE.CylinderGeometry(.2,.23,.2,20),dark),0,.2,-.01,head);
     at(mesh(sph(.055,12,10),M.gold),0,.34,-.01,head);
     for(const sx of[-1,1]){const r=at(mesh(new THREE.TorusGeometry(.05,.009,6,18),dark),sx*.08,.02,.225,head);}
     at(B(.06,.01,.01,dark),0,.03,.228,head);
   }else{
-    at(mesh(new THREE.SphereGeometry(.245,22,12,0,6.283,0,1.45),hair),0,.03,-.01,head);
+    if(L.style!=='bald') at(mesh(new THREE.SphereGeometry(.245,22,12,0,6.283,0,1.45),hair),0,.03,-.01,head);
     if(L.style==='long') at(B(.44,.44,.12,hair),0,-.15,-.15,head);
     if(L.style==='bun') at(mesh(sph(.1,12,10),hair),0,.2,-.15,head);
+    if(L.style==='twin') for(const sx of[-1,1]) at(mesh(sph(.085,12,10),hair),sx*.19,.17,-.04,head);
+    if(L.style==='pony') at(B(.1,.32,.1,hair),0,-.12,-.26,head).rotation.x=.25;
   }
+  if(L.hat===1){const h=at(mesh(new THREE.ConeGeometry(.46,.2,22),mat(0xd8b878)),0,.27,0,head); }           // 斗笠
+  if(L.hat===2){at(mesh(new THREE.SphereGeometry(.25,20,10,0,6.283,0,1.4),shirt),0,.06,-.01,head); at(B(.3,.025,.2,shirt),0,.1,.22,head);}   // 帽子
   const tag=tagSprite(name,daoist?{fg:'#ffd77a',bg:'rgba(120,20,12,.78)'}:{}); tag.position.y=2.0; g.add(tag);
   g.traverse(o=>{if(o.isMesh) o.castShadow=true;});
-  return {g,upper,legL,legR,armL,armR,head,tag};
+  return {g,upper,legL,legR,armL,armR,head,tag,skirt};
 }
-function pose(A,{walk=0,phase=0,bow=0,pray=0,raise=0,sit=0,kneel=0,lift=0,armL=null,armR=null,zL=null,zR=null}){
-  const s=Math.sin(phase)*walk, y=.66-.5*sit-.3*kneel+lift;
+function pose(A,{walk=0,phase=0,bow=0,pray=0,raise=0,sit=0,kneel=0,lift=0,seat=0,armL=null,armR=null,zL=null,zR=null}){
+  const s=Math.sin(phase)*walk, y=.66-.5*sit-.3*kneel+lift-.06*seat;
   A.legL.position.y=A.legR.position.y=A.upper.position.y=y;
-  A.legL.rotation.x=s*.7-1.5*sit+1.2*kneel; A.legR.rotation.x=-s*.7-1.5*sit+1.2*kneel; A.legL.rotation.z=-.25*sit; A.legR.rotation.z=.25*sit; A.upper.rotation.x=bow;
-  const ax=-1.2*pray-2.6*raise-.5*sit;
+  if(A.skirt){const low=Math.max(sit,seat,kneel); A.skirt.scale.y=1-.55*low; A.skirt.position.y=.38+(y-.66)+.14*low;}   // 坐下時長袍跟著縮
+  A.legL.rotation.x=s*.7-1.5*sit+1.2*kneel-1.1*seat; A.legR.rotation.x=-s*.7-1.5*sit+1.2*kneel-1.1*seat; A.legL.rotation.z=-.25*sit; A.legR.rotation.z=.25*sit; A.upper.rotation.x=bow;
+  const ax=-1.2*pray-2.6*raise-.5*sit-.45*seat;
   A.armL.rotation.x=armL??(-s*.6*(1-pray)+ax); A.armR.rotation.x=armR??(s*.6*(1-pray)+ax);
   A.armL.rotation.z=zL??.55*pray; A.armR.rotation.z=zR??-.55*pray;
 }
@@ -1196,7 +1205,14 @@ function setupUI(){
   #start input{width:100%;box-sizing:border-box;font:inherit;font-size:17px;text-align:center;padding:10px;border-radius:10px;border:1px solid #8a6a3a;background:#160c08;color:#f6e6c4}
   .looks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
   .looks button{font:inherit;color:#f6e3b3;background:#1c100a;border:1px solid #6a4a2a;border-radius:12px;padding:8px 4px;font-size:13px;cursor:pointer}
-  .looks button.on{border-color:#f0cc72;background:#3a2210} .looks b{display:block;width:26px;height:26px;border-radius:50%;margin:0 auto 4px;border:2px solid #0006}
+  .looks button.on{border-color:#f0cc72;background:#3a2210}
+  #cus{position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;background:rgba(10,6,4,.6)}
+  #cus .card{width:min(440px,calc(100vw - 24px));background:#24140d;border:1px solid #c89a46;border-radius:16px;padding:14px;box-sizing:border-box}
+  .cTabs{display:flex;gap:4px;margin-bottom:6px} .cTabs button{flex:1;font:inherit;font-size:13px;color:#e9d8b4;background:#1c100a;border:1px solid #6a4a2a;border-radius:8px;padding:6px 0}
+  .cTabs button.on{border-color:#f0cc72;color:#ffe9b0;background:#3a2210}
+  .cLab{font-size:12px;color:#c8b088;margin:8px 0 4px} .cRow{display:flex;flex-wrap:wrap;gap:6px}
+  .cRow .sw{width:28px;height:28px;border-radius:50%;border:2px solid #0008;cursor:pointer} .cRow .sw.on{outline:2px solid #f0cc72;outline-offset:2px}
+  .cRow .chip{font:inherit;font-size:13px;color:#f6e3b3;background:#1c100a;border:1px solid #6a4a2a;border-radius:999px;padding:4px 10px;cursor:pointer} .cRow .chip.on{border-color:#f0cc72;background:#7a2a18} .looks b{display:block;width:26px;height:26px;border-radius:50%;margin:0 auto 4px;border:2px solid #0006}
   @media (max-width:520px){#bar{padding:0 10px 0 146px;justify-content:flex-end} .gbtn{padding:8px 11px;font-size:13px}}`;
   document.head.appendChild(css);
   const div=(id,html='')=>{const d=document.createElement('div'); d.id=id; d.className='gx'; d.innerHTML=html; document.body.appendChild(d); return d;};
@@ -1220,6 +1236,23 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 // ── 10.6 遊戲狀態 ────────────────────────────────────────
 const G={player:null,pos:V3(2.2,0,21.5),heading:Math.PI,yaw:0,pitch:.3,yawT:0,pitchT:.3,camSnap:true,joy:{x:0,y:0},keys:{},busy:false,act:null,spot:null,
   done:new Set(),emote:null,status:'休息中',npc:null,npcTag:null,awayTag:null,phase:0};
+// ── 捏外型:選項 → 編成一個數字(1000 起)存檔、上網同步;0~5 是舊的預設造型
+const CUS=[
+  ['skin','膚色',[0xf3d2b3,0xe8bf98,0xc9976c,0x8d5a3b],'c'],
+  ['eyes','眼睛',['圓眼','笑眼','閉目','大眼']],
+  ['brow','眉毛',['無','細眉','粗眉']],
+  ['style','髮型',['短髮','長髮','包頭','光頭','雙丸子','馬尾']],
+  ['hair','髮色',[0x1c1512,0x5a3a22,0xb8b2a8,0x8a2a1a,0xd8b060],'c'],
+  ['outfit','款式',['上衣褲子','長袍']],
+  ['shirt','衣服',[0x3c6fb0,0xd86a8a,0x7a8a6a,0x7a4a9a,0xf2f0ea,0x2e4a3e,0xc0392b,0xe0a030],'c'],
+  ['pants','褲子',[0x2a2a30,0x3a3226,0x24324a,0x6a5a48,0xf2f0ea],'c'],
+  ['hat','頭飾',['無','斗笠','帽子']]];
+const CUS_TABS=[['臉',['skin','eyes','brow']],['髮型',['style','hair']],['服裝',['outfit','shirt','pants']],['頭飾',['hat']]];
+const STYLE_K=['short','long','bun','bald','twin','pony'];
+function encLook(o){let c=0; for(let i=CUS.length-1;i>=0;i--) c=c*CUS[i][2].length+(o[CUS[i][0]]||0); return 1000+c;}
+function decLook(l){let c=l-1000; const o={}; for(const [k,,v] of CUS){o[k]=c%v.length; c=Math.floor(c/v.length);} return o;}
+function lookOf(l){l=+l||0; if(l<1000) return LOOKS[l]||LOOKS[0]; const o=decLook(l), V=k=>CUS.find(x=>x[0]===k)[2][o[k]];
+  return {shirt:V('shirt'),pants:V('pants'),hair:V('hair'),skin:V('skin'),style:STYLE_K[o.style],eyes:o.eyes,brow:o.brow,robe:o.outfit===1,hat:o.hat};}
 function loadSave(){try{return JSON.parse(localStorage.getItem('yp_player')||'null');}catch(e){return null;}}
 function save(o){try{localStorage.setItem('yp_player',JSON.stringify(o));}catch(e){}}
 
@@ -1229,15 +1262,42 @@ function showStart(){
   d.innerHTML=`<div class="card"><h1>延平宮</h1><div class="sub">大稻埕 · 線上參拜</div>
     <input id="nm" maxlength="8" placeholder="輸入你的名字" value="${esc(sv.name||'')}">
     <div class="looks">${LOOKS.map((l,i)=>`<button data-i="${i}" class="${i===look?'on':''}"><b style="background:#${l.shirt.toString(16).padStart(6,'0')}"></b>${l.name}</button>`).join('')}</div>
+    <button class="gbtn" id="cusBtn" style="width:100%;margin:-4px 0 10px;padding:10px;font-size:15px;${look>=1000?'border-color:#f0cc72;background:#3a2210':''}">✂️ 捏外型(自己打扮)</button>
     <button class="gbtn gold" id="go" style="width:100%;font-size:17px;padding:12px">進入延平宮</button>
     <p style="font-size:12px;line-height:1.7;opacity:.75;margin-top:14px">這是大稻埕延平宮的實景。<br>在服務處送出的法事報名與上疏,由大祐道長親自處理。</p></div>`;
   document.body.appendChild(d);
-  d.querySelectorAll('.looks button').forEach(b=>b.onclick=()=>{look=+b.dataset.i; d.querySelectorAll('.looks button').forEach(x=>x.classList.toggle('on',x===b));});
+  d.querySelectorAll('.looks button').forEach(b=>b.onclick=()=>{look=+b.dataset.i; d.querySelectorAll('.looks button').forEach(x=>x.classList.toggle('on',x===b)); $('cusBtn').style.cssText='width:100%;margin:-4px 0 10px;padding:10px;font-size:15px';});
+  $('cusBtn').onclick=()=>showCustom(look,l=>{look=l; d.querySelectorAll('.looks button').forEach(x=>x.classList.remove('on')); $('cusBtn').style.borderColor='#f0cc72'; $('cusBtn').style.background='#3a2210';});
   $('go').onclick=()=>{const name=($('nm').value.trim()||'善信').slice(0,8); save({name,look}); d.remove(); if(musicPref()) setMusic(true); else setMusic(false); enterGame(name,look);};
+}
+function showCustom(look,done){                                                            // 捏外型:左邊即時預覽、可轉一圈
+  const o=look>=1000?decLook(look):{skin:0,eyes:0,brow:1,style:0,hair:0,outfit:0,shirt:0,pants:0,hat:0}; let tab=0, spin=true;
+  const d=document.createElement('div'); d.id='cus'; d.className='gx';
+  d.innerHTML=`<div class="card"><h3 style="margin:0 0 8px;color:#ecc86a;letter-spacing:.2em">打扮一下再進殿</h3>
+    <div style="display:flex;gap:12px;align-items:flex-start"><div id="cusPv" style="width:130px;height:180px;flex-shrink:0;border-radius:12px;background:radial-gradient(#4a2a18,#1c100a)"></div>
+    <div style="flex:1;min-width:0"><div class="cTabs">${CUS_TABS.map((t,i)=>`<button data-t="${i}">${t[0]}</button>`).join('')}</div><div id="cusOpt"></div></div></div>
+    <div class="acts"><button class="gbtn" id="cRand">🎲 隨機</button><button class="gbtn" id="cSpin">轉一圈</button><button class="gbtn gold" id="cOk">完成</button></div></div>`;
+  document.body.appendChild(d);
+  const R=new THREE.WebGLRenderer({antialias:true,alpha:true}); R.setPixelRatio(Math.min(2,devicePixelRatio)); R.setSize(130,180); R.outputColorSpace=THREE.SRGBColorSpace; $('cusPv').appendChild(R.domElement);
+  const S=new THREE.Scene(), C=new THREE.PerspectiveCamera(30,130/180,.1,20); C.position.set(0,1.25,4.3); C.lookAt(0,1.0,0);
+  S.add(new THREE.HemisphereLight(0xfff2e0,0x3a2414,2.2)); const dl=new THREE.DirectionalLight(0xffffff,1.6); dl.position.set(2,3,4); S.add(dl);
+  let A=null, ry=.4, run=true;
+  const rebuild=()=>{if(A) S.remove(A.g); A=makeAvatar(lookOf(encLook(o)),''); A.tag.visible=false; A.g.rotation.y=ry; S.add(A.g);};
+  const opts=()=>{$('cusOpt').innerHTML=CUS_TABS[tab][1].map(k=>{const [,lab,vals,c]=CUS.find(x=>x[0]===k);
+      return `<div class="cLab">${lab}</div><div class="cRow">${vals.map((v,i)=>c?`<button class="sw ${o[k]===i?'on':''}" data-k="${k}" data-i="${i}" style="background:#${v.toString(16).padStart(6,'0')}"></button>`
+        :`<button class="chip ${o[k]===i?'on':''}" data-k="${k}" data-i="${i}">${v}</button>`).join('')}</div>`;}).join('');
+    d.querySelectorAll('.cTabs button').forEach((b,i)=>b.classList.toggle('on',i===tab));
+    d.querySelectorAll('#cusOpt [data-k]').forEach(b=>b.onclick=()=>{o[b.dataset.k]=+b.dataset.i; opts(); rebuild();});};
+  d.querySelectorAll('.cTabs button').forEach(b=>b.onclick=()=>{tab=+b.dataset.t; opts();});
+  $('cRand').onclick=()=>{for(const [k,,v] of CUS) o[k]=Math.floor(Math.random()*v.length); opts(); rebuild();};
+  $('cSpin').onclick=()=>{spin=!spin;};
+  $('cOk').onclick=()=>{run=false; R.dispose(); R.forceContextLoss(); d.remove(); done(encLook(o));};
+  const loop=()=>{if(!run) return; if(spin) ry+=.012; if(A) A.g.rotation.y=ry; R.render(S,C); requestAnimationFrame(loop);};
+  opts(); rebuild(); loop();
 }
 function enterGame(name,look){
   if(G.player) world.remove(G.player.g);
-  G.player=makeAvatar(LOOKS[look],name); world.add(G.player.g);
+  G.player=makeAvatar(lookOf(look),name); world.add(G.player.g);
   try{G.done=new Set(JSON.parse(localStorage.getItem('yp_done')||'[]'));}catch(e){}
   updateProg(); let off=null; try{off=localStorage.getItem('yp_notice');}catch(e){}
   if(off!=='off') showNotice(true); else toast('入廟先到<b>天公爐</b>拜天公 🙏',3600);
@@ -1267,16 +1327,24 @@ function setStatus(s){
   const old=G.npcTag; G.npcTag=tagSprite(s==='法事中'?'🔔 法事中':s,{bg:s==='法事中'?'rgba(150,26,16,.9)':'rgba(30,70,36,.78)',scale:s==='法事中'?1.35:1.0});
   G.npcTag.position.y=G.nameTag.position.y+.32; N.g.remove(old); N.g.add(G.npcTag);
   const st=$('stBtn'); if(st){st.querySelector('.dot').style.background=STATUS_TXT[s].dot; st.querySelector('span:last-child').textContent='道長 · '+s;}
+  setNote(G.note||'',true);
+}
+function setNote(t,force){                                                                 // 道長頭上掛的自訂文字(道長在 LINE 傳「頭上 xxx」)
+  if(t===G.note&&!force) return; G.note=t;
+  if(G.noteTag){G.noteTag.parent?.remove(G.noteTag); G.noteTag=null;}
+  if(!t) return; G.noteTag=bubbleSprite(t); const h=G.noteTag.userData.h;
+  if(G.status==='外出'){G.noteTag.position.copy(G.awayTag.position).add(V3(0,.32+h/2,0)); world.add(G.noteTag);}   // 外出:掛在服務處立牌上方
+  else{G.noteTag.position.y=G.nameTag.position.y+.62+h/2; G.npc.g.add(G.noteTag);}
 }
 async function pollStatus(){ if(!GAME.STATUS_URL) return;
-  try{const j=await (await fetch(GAME.STATUS_URL,{cache:'no-store'})).json(); if(j.status&&j.status!==G.status) setStatus(j.status); if(j.lamps) setLamps(j.lamps); if(j.shu) G.shu=j.shu; barKey='';}catch(e){} }
+  try{const j=await (await fetch(GAME.STATUS_URL,{cache:'no-store'})).json(); if(j.status&&j.status!==G.status) setStatus(j.status); if('note' in j) setNote(j.note||''); if(j.lamps) setLamps(j.lamps); if(j.shu) G.shu=j.shu; barKey='';}catch(e){} }
 
 // ── 10.8 互動卡片 ────────────────────────────────────────
 function showDaoist(){const S=STATUS_TXT[G.status];
   modal(`<div style="display:flex;gap:14px;align-items:center"><img src="${TX_daoyou.image.src}" style="width:92px;height:111px;object-fit:cover;border-radius:10px;border:1px solid #c89a46">
     <div><h3>大祐道長</h3><div style="font-size:13px;opacity:.85">大稻埕延平宮 · 劉厝派鼎新門</div>
     <div style="margin-top:8px"><span class="dot" style="background:${S.dot}"></span>${S.line}</div></div></div>
-    <p>${S.sub}</p><div class="acts"><button class="gbtn" data-close>關閉</button>
+    ${G.note?`<p style="background:#3a2414;border:1px solid #8a6a3a;border-radius:8px;padding:8px 10px">💬 道長說:${esc(G.note)}</p>`:''}<p>${S.sub}</p><div class="acts"><button class="gbtn" data-close>關閉</button>
     <button class="gbtn" id="toCounter">到服務處</button><button class="gbtn" id="toMsg">留言</button><a class="gbtn gold" href="${GAME.LINE}" target="_blank" rel="noopener" style="text-decoration:none">LINE 問事</a></div>`,
     m=>{m.querySelector('#toCounter').onclick=()=>{closeModal(); teleport(7.4,-12.8,Math.PI);}; m.querySelector('#toMsg').onclick=showMsg;});}
 function showGod(sp){modal(`<h3>${sp.id==='tiangong'?'拜天公':sp.god}</h3><div style="font-size:13px;opacity:.8">${sp.name}</div><p>${sp.desc}</p>
@@ -1445,7 +1513,7 @@ function teleport(x,z,heading){G.pos.set(x,0,z); G.heading=heading; G.yaw=G.yawT
 
 // ── 10.11 動作列(依靠近的地點切換)────────────────────────
 let barKey='';
-function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(sp?sp.id:'')+(G.act?'!':'')+G.status;
+function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(G.emote?.k||'')+'|'+(sp?sp.id:'')+(G.act?'!':'')+G.status;
   if(key===barKey) return; barKey=key; const bar=$('bar'), pr=$('prompt'); bar.innerHTML='';
   pr.style.opacity=sp&&!G.act?1:0; if(!sp||G.act) return;
   pr.textContent=sp.kind==='notice'?'公告欄':sp.kind==='counter'?'服務處 · 報名法事、上疏、供燈':sp.kind==='deng'?'供燈桌 · 點一盞燈祈福':sp.kind==='gongde'?'功德箱 · 添油香':sp.id==='npc'?`大祐道長 · ${G.status}`:(sp.label||`${sp.name} · ${sp.god}`);
@@ -1507,7 +1575,7 @@ function netUp(id,r){
   if(netNow()-(r.t||0)>90000) return netDel(id);
   let p=NET.peers.get(id);
   if(p&&(p.n!==r.n||p.l!==r.l)){world.remove(p.A.g); NET.peers.delete(id); p=null;}
-  if(!p){const A=makeAvatar(LOOKS[r.l]||LOOKS[0],String(r.n||'善信').slice(0,12)); A.g.position.set(r.x,0,r.z); A.g.rotation.y=r.r; world.add(A.g);
+  if(!p){const A=makeAvatar(lookOf(r.l),String(r.n||'善信').slice(0,12)); A.g.position.set(r.x,0,r.z); A.g.rotation.y=r.r; world.add(A.g);
     p={A,n:r.n,l:r.l,a:r.a,s:r.s,act:null,phase:0}; NET.peers.set(id,p);}
   else{
     if(r.a&&r.a!==p.a){const [k,sid]=r.a.split(':'); const sp=SPOTS.find(x=>x.id===sid); if(sp&&['bow','incense','jiao'].includes(k)) p.act={kind:k,sp,t:0}; if(k==='emote') p.emote=sid==='stand'?null:{k:sid,t:0};}
@@ -1539,7 +1607,7 @@ function netTick(dt){
     let dr=p.tr-g.rotation.y; dr=Math.atan2(Math.sin(dr),Math.cos(dr)); g.rotation.y+=dr*Math.min(1,dt*10);
     const v=Math.hypot(g.position.x-ox,g.position.z-oz)/Math.max(dt,1e-3), walk=Math.min(1,v/3);
     if(walk>.05) p.phase+=dt*9*walk;
-    if(p.emote&&walk>.05) p.emote=null;
+    if(p.emote&&walk>.05&&p.emote.t>1) p.emote=null;
     const P=remoteAct(p,dt)||(p.emote&&(emoteP(p.emote,dt)||(p.emote=null))); pose(p.A,P?{...P,phase:p.phase}:{walk:walk>.05?walk:0,phase:p.phase}); tickBubble(p.A,dt);}
 }
 function showSay(){modal(`<h3>💬 聊天</h3><p class="note">頭上會出現對話泡泡,線上的人都看得到。最多 20 字,請保持莊重。</p>
@@ -1561,7 +1629,7 @@ function startGame(){
   buildCamColliders();
   controls.enabled=false; camera.fov=52; camera.updateProjectionMatrix(); $('ui').style.display='none'; $('title').style.display='none';
   setupUI(); setupInput(); buildNPC(); showStart(); pollStatus(); setInterval(pollStatus,60000);
-  window.__game={walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay,setLamps,showLamps,showShu};
+  window.__game={setNote,walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay,setLamps,showLamps,showShu};
   const clock=new THREE.Clock(); let t=0;
   renderer.setAnimationLoop(()=>{const dt=Math.min(.05,clock.getDelta()); t+=dt; gameTick(dt,t); animate(t); composer.render();});
 }
