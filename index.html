@@ -902,10 +902,12 @@ const GAME={
   ],
   PAY:{                                           // 綠界付款連結(送出後顯示「前往付款」)
     '上疏':'https://cart.cashier.ecpay.com.tw/qp/3yd0',
+    '供燈':'https://cart.cashier.ecpay.com.tw/qp/3ye5',
     '補財庫':'https://yanpingkung.cashier.ecpay.com.tw/product/000000000644828',
     '補運祭改':'https://yanpingkung.cashier.ecpay.com.tw/product/000000000646897',
   },
   NEWS:[
+    '供燈祈福 300 元:道長上班時為您點一盞燈,寫上姓名與生辰,供奉一天。',
     '上疏祈福:道長上班後依序書寫上疏;休息時間送出的,待上班後執行。',
     '法事(補運祭改、補財庫等)需由道長擇日,送出後道長會聯繫您確認日期。',
   ],
@@ -933,6 +935,7 @@ const SPOTS=[
   {id:'taohua',burn:[-4.55,1.2,8.2],name:'桃花女神',god:'桃花女神',x:-3.2,z:8.2,look:[-5,2.3,8.2],r:2.0,service:'斬桃花／求姻緣',
    desc:'桃花女神主人緣與姻緣。求良緣、和合,也可斬除爛桃花。'},
   {id:'notice',name:'公告欄',x:-8.5,z:13.0,look:[-10.4,1.6,13.0],r:1.9,kind:'notice'},
+  {id:'deng',name:'供燈桌',x:2.2,z:1.6,look:[2.2,.9,0],r:1.8,kind:'deng'},
   {id:'counter',name:'服務處',x:7.4,z:-13.3,look:[7.4,1.3,-15.2],r:2.0,kind:'counter'},
 ];
 const HUYE={id:'huye',burn:[2.2,.08,-9.58],name:'虎爺',god:'虎爺',x:2.2,z:-7.0,look:[2.2,.3,-10],
@@ -954,6 +957,7 @@ const circO=(x,z,r)=>OBST.push({x,z,r});
 rectO(2.2,-15.2,4.2,1.4); rectO(2.2,-10,3.8,1.8); rectO(-3.9,-14,3.6,1.3); rectO(-3.9,-15.4,4,1.2);
 circO(2.2,11.2,.62); rectO(-10.4,13.0,.5,2.6); rectO(0,-16.2,22.7,.5);   // 神龕牆
 rectO((-15.3+GATE_X0-.2)/2,18.2,(GATE_X0-.2+15.3),.5); rectO((GATE_X1+.2+12)/2,18.2,(12-GATE_X1-.2),.5); circO(GATE_X0-.1,18.2,.3); circO(GATE_X1+.1,18.2,.3); OBST.push({x:6.4,z:13.6,r:.45,npc:true});   // 法事中的道長 rectO(2.2,9.3,2.9,1.45); rectO(-.5,9.5,1.4,1.4); rectO(4.9,9.5,1.4,1.4); circO(-2.4,10.2,.55);
+rectO(.6,0,1.8,.75); rectO(3.8,0,1.8,.75);   // 廟埕兩張白鐵桌
 rectO(-5,8.2,1.35,1.7); rectO(-5.4,-5.3,1.5,2.6); rectO(7.4,-15.3,2.9,1.6);
 circO(-12.15,-18.7,.72); rectO(-13.45,-18.7,1.3,3.7);
 for(const z of VAULT.trusses){circO(11,z,.32); circO(-11,z,.32); circO(-15.6,z,.2);}
@@ -978,6 +982,22 @@ function buildCounter(){
   g.add(at(mesh(box(.5,.04,.36),std({color:0xf2d65a,roughness:.6})),-.6,1.03,.12));
 }
 buildCounter();
+const DENG_FL=[], DENG_L=[], DENG_CUP=[], CUP_OFF=std({color:0x8a1c16,roughness:.35}), CUP_LIT=std({color:0xe0402a,roughness:.3,emissive:0xc02a10,emissiveIntensity:1.1});
+function setLamps(list){G.lamps=list||[]; DENG_FL.forEach((f,i)=>{f.visible=i<G.lamps.length; DENG_CUP[i].material=f.visible?CUP_LIT:CUP_OFF;}); DENG_L.forEach(L=>L.intensity=Math.min(1.6,G.lamps.length*.12));}
+function buildDengTables(){                                                              // 主桌與天公爐之間的廟埕:兩張白鐵桌,桌上供燈
+  const ss=std({color:0xe4e8eb,metalness:.55,roughness:.3}), cup=CUP_OFF,
+        fl=new THREE.MeshBasicMaterial({color:0xffe08a}), glow=new THREE.MeshBasicMaterial({color:0xff9a3a,transparent:true,opacity:.5,depthWrite:false});
+  for(const cx of[.6,3.8]){const g=new THREE.Group(); at(g,cx,0,0,world);
+    g.add(at(mesh(box(1.8,.035,.75),ss),0,.78,0)); g.add(at(mesh(box(1.7,.02,.65),ss),0,.18,0));
+    for(const sx of[-1,1])for(const sz of[-1,1]) g.add(at(mesh(cyl(.022,.022,.78,8),ss),sx*.84,.39,sz*.32));
+    for(let j=0;j<3;j++)for(let i=0;i<7;i++){const x=-.72+i*.24, z=-.24+j*.24;                // 一排排供燈杯,付款確認後才點亮
+      const c=at(mesh(cyl(.04,.035,.09,10),cup,{cast:false}),x,.84,z); g.add(c); DENG_CUP.push(c);
+      const f=new THREE.Group(), fm=at(mesh(new THREE.SphereGeometry(.026,8,6),fl,{cast:false}),0,.02,0); fm.scale.y=1.9; f.add(fm); f.add(at(mesh(new THREE.SphereGeometry(.085,10,8),glow,{cast:false,recv:false}),0,.02,0));
+      f.visible=false; at(f,x,.905,z,g); DENG_FL.push(f);}
+    const L=new THREE.PointLight(0xffb050,0,3.2,2); at(L,0,1.1,0,g); DENG_L.push(L);}
+  at(mesh(new THREE.PlaneGeometry(.9,.24),std({map:plaqueTex('供燈祈福',{bg:'#4a1c16',fg:'#e9c46a',border:'#9a7434',h:200}),roughness:.35}),{cast:false}),3.8,.62,.38,world);
+}
+buildDengTables();
 function buildNotice(){                                                                   // 進門左手邊、靠側牆的公告欄
   const g=new THREE.Group(); at(g,-10.4,0,13.0,world); g.rotation.y=Math.PI/2;
   for(const sx of[-1,1]) g.add(at(mesh(cyl(.05,.05,2.3,10),M.vermilion),sx*1.15,1.15,0));
@@ -1087,7 +1107,7 @@ function setupUI(){
   #hud{top:max(10px,env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
   #hud>*{pointer-events:auto} #hud .t{font-size:17px;letter-spacing:.3em;color:#ecc86a;text-shadow:0 2px 8px #000;white-space:nowrap;flex-shrink:0}
   #hud .r .gbtn{padding:7px 10px;font-size:13px;letter-spacing:.04em}
-  #hud .r #sayBtn{position:fixed;right:20px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 30px);width:56px;height:56px;border-radius:50%;padding:0;font-size:24px;background:rgba(40,22,12,.82)}
+  #hud .r #sayBtn{position:fixed;right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 56px);width:50px;height:50px;border-radius:50%;padding:0;font-size:24px;background:rgba(40,22,12,.82)}
   #hud .t small{display:block;font-size:11px;letter-spacing:.15em;color:#e9d8b4;opacity:.85}
   #hud .r{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
   #prompt{left:0;right:0;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 128px);text-align:center;pointer-events:none;font-size:15px;
@@ -1186,7 +1206,7 @@ function setStatus(s){
   const st=$('stBtn'); if(st){st.querySelector('.dot').style.background=STATUS_TXT[s].dot; st.querySelector('span:last-child').textContent='道長 · '+s;}
 }
 async function pollStatus(){ if(!GAME.STATUS_URL) return;
-  try{const j=await (await fetch(GAME.STATUS_URL,{cache:'no-store'})).json(); if(j.status&&j.status!==G.status) setStatus(j.status);}catch(e){} }
+  try{const j=await (await fetch(GAME.STATUS_URL,{cache:'no-store'})).json(); if(j.status&&j.status!==G.status) setStatus(j.status); if(j.lamps) setLamps(j.lamps); if(j.shu) G.shu=j.shu; barKey='';}catch(e){} }
 
 // ── 10.8 互動卡片 ────────────────────────────────────────
 function showDaoist(){const S=STATUS_TXT[G.status];
@@ -1202,32 +1222,46 @@ function showGod(sp){modal(`<h3>${sp.id==='tiangong'?'拜天公':sp.god}</h3><di
 function birthFields(){return `<label>農曆生日</label><div class="row"><input name="y" inputmode="numeric" placeholder="年(民國)"><input name="m" inputmode="numeric" placeholder="月"><input name="d" inputmode="numeric" placeholder="日"></div>
   <label>出生時辰</label><select name="hour">${HOURS.map(h=>`<option>${h}${h==='不知道'?'':'時'}</option>`).join('')}</select>`;}
 function showForm(kind,preset){
-  const fashi=kind==='fashi';
+  const fashi=kind==='fashi', deng=kind==='deng';
   const off=G.status!=='法事中';
-  modal(`<h3>${fashi?'法事報名':'上疏祈福'}</h3>${fashi?`<p class="warn">法事需由道長<b>擇日</b>,送出後道長會依您留的聯絡方式,通知您法事日期。</p>`:off?`<p class="warn">道長目前${G.status==='外出'?'不在廟裡':'休息中'}。<br>您可以先送出,道長上班後依序上疏。</p>`:''}<p class="note">資料只用於道長書寫疏文與聯繫,不會公開。</p><form id="fm">
+  modal(`<h3>${fashi?'法事報名':deng?'供燈祈福':'上疏祈福'}</h3>${fashi?`<p class="warn">法事需由道長<b>擇日</b>,送出後道長會依您留的聯絡方式,通知您法事日期。</p>`
+      :deng?`<p class="warn">供燈一天 <b>300 元</b>。道長上班時親自為您點一盞燈,供奉一天,寫上您的<b>姓名與生辰</b>,在延平宮神前為您祈福。</p>`
+      :off?`<p class="warn">道長目前${G.status==='外出'?'不在廟裡':'休息中'}。<br>您可以先送出,道長上班後依序上疏。</p>`:''}<p class="note">資料只用於道長${deng?'書寫燈上姓名生辰':'書寫疏文'}與聯繫,不會公開。</p><form id="fm">
     ${fashi?`<label>法事項目</label><select name="service">${SERVICES.map(s=>`<option ${s===preset?'selected':''}>${s}</option>`).join('')}</select>`:''}
     <label>姓名</label><input name="name" required value="${esc(loadSave()?.name||'')}">
     <label>性別</label><select name="sex"><option>男</option><option>女</option></select>
     ${birthFields()}
-    <label>地址(寫入疏文)</label><input name="addr" placeholder="縣市、區、路名門牌">
+    ${deng?'':'<label>地址(寫入疏文)</label><input name="addr" placeholder="縣市、區、路名門牌">'}
     ${fashi?'':`<label>祈求事項</label><select name="wish">${WISHES.map(w=>`<option>${w}</option>`).join('')}</select>`}
     ${fashi?'<label>方便的日期/時段(參考,實際由道長擇日)</label><input name="prefer" placeholder="例:平日晚上、11 月下旬">':''}
-    <label>${fashi?'想跟道長說的話':'詳細內容'}</label><textarea name="note" rows="3"></textarea>
+    ${deng?'':`<label>${fashi?'想跟道長說的話':'詳細內容'}</label><textarea name="note" rows="3"></textarea>`}
     <label>聯絡方式(電話或 LINE ID)</label><input name="contact" required>
-    <div class="acts"><button type="button" class="gbtn" data-close>取消</button><button class="gbtn gold" type="submit">送出</button></div></form>
+    <div class="acts"><button type="button" class="gbtn" data-close>取消</button><button class="gbtn gold" type="submit">${deng?'送出並付款':'送出'}</button></div></form>
     ${GAME.ENDPOINT?'':'<p class="note">⚠ 示範版:目前不會真的送出,正式上線後會即時通知道長。</p>'}`,
   m=>m.querySelector('#fm').onsubmit=async e=>{e.preventDefault();
-    const data=Object.fromEntries(new FormData(e.target)); data.kind=fashi?'法事報名':'上疏'; data.time=new Date().toISOString();
+    const data=Object.fromEntries(new FormData(e.target)); data.kind=fashi?'法事報名':deng?'供燈':'上疏'; data.time=new Date().toISOString();
     if(GAME.ENDPOINT){try{const r=await (await fetch(GAME.ENDPOINT,{method:'POST',body:JSON.stringify(data)})).json(); if(!r.ok) throw r; showSent(data,off);}
       catch(err){toast('送出失敗,請改用 LINE 聯繫道長');}}
     else{closeModal(); toast('示範版:資料未送出<br>(正式版會即時通知道長)',3600);}});}
 function showSent(d,off){
-  const fashi=d.kind==='法事報名', item=fashi?d.service:'上疏', pay=GAME.PAY[item];
+  const fashi=d.kind==='法事報名', item=fashi?d.service:d.kind, pay=GAME.PAY[item];
   modal(`<h3>已送出 🙏</h3><p>${fashi?`道長收到了您的<b>${esc(item)}</b>報名,會先為您<b>擇日</b>,再依您留的聯絡方式通知法事日期。`
-      :`道長收到了您的上疏祈福,${off?'上班後會依序為您書寫上疏':'會盡快為您書寫上疏'}。`}</p>
+      :d.kind==='供燈'?`道長收到了您的供燈。確認付款後,供燈桌上就會為您<b>點亮一盞燈</b>;道長${off?'上班時':'今天'}也會親自點一盞實體的燈,寫上您的姓名生辰。`
+      :`道長收到了您的上疏祈福。確認付款後會列入服務處的<b>上疏等待名單</b>,道長${off?'上班後依序':'會盡快'}為您書寫上疏。`}</p>
     ${pay?`<p class="note">完成付款才算報名成功。付款時請填<b>與報名相同的姓名「${esc(d.name)}」</b>,方便道長核對。</p>`
       :`<p class="note">此項目費用由道長聯繫時說明。</p>`}
     <div class="acts"><button class="gbtn" data-close>${pay?'稍後再付':'關閉'}</button>${pay?`<a class="gbtn gold" href="${pay}" target="_blank" rel="noopener" style="text-decoration:none">前往付款</a>`:''}</div>`);}
+const chip=(t,c='#6a4a2a')=>`<span style="display:inline-block;border:1px solid ${c};border-radius:999px;padding:4px 10px;margin:3px 3px 0 0;font-size:13px;background:#1c100a">${t}</span>`;
+function showLamps(){const L=G.lamps||[];
+  modal(`<h3>🕯 供燈名單</h3><p>目前供燈桌上共 <b>${L.length}</b> 盞燈${L.length?',每一盞都由大祐道長親自點燈、寫上姓名生辰,供奉一天。':'。'}</p>
+    <div>${L.map(l=>chip(`${esc(l.n)}${l.w?' · '+esc(l.w):''}`,'#8a6a3a')).join('')||'<p class="note">還沒有人供燈,成為第一盞燈吧。</p>'}</div>
+    <p class="note">名單只顯示部分姓名,生辰與地址不公開。</p>
+    <div class="acts"><button class="gbtn" data-close>關閉</button><button class="gbtn gold" id="dg">我也要供燈</button></div>`,m=>m.querySelector('#dg').onclick=()=>showForm('deng'));}
+function showShu(){const S=G.shu||[], w=S.filter(x=>x.st==='等待上疏');
+  modal(`<h3>📜 上疏進度</h3><p>等待上疏 <b>${w.length}</b> 位。道長上班後依序書寫上疏。</p>
+    <div>${S.map(x=>chip(`${esc(x.n)}${x.w?' · '+esc(x.w):''} · ${x.st==='已上疏'?'✅ 已上疏':'⏳ 等待中'}`,x.st==='已上疏'?'#4a7a4a':'#8a6a3a')).join('')||'<p class="note">目前沒有等待中的上疏。</p>'}</div>
+    <p class="note">付款確認後才會列入名單;只顯示部分姓名。</p>
+    <div class="acts"><button class="gbtn" data-close>關閉</button><button class="gbtn gold" id="sq">上疏祈福</button></div>`,m=>m.querySelector('#sq').onclick=()=>showForm('shu'));}
 function upcoming(){const today=new Date().toISOString().slice(0,10); return GAME.EVENTS.filter(e=>e.date>=today);}
 function eventsHTML(){const ev=upcoming(); if(!ev.length) return '';
   return ev.map(e=>`<div style="display:flex;gap:10px;align-items:center;border:1px solid #6a4a2a;border-radius:10px;padding:10px 12px;margin:8px 0;background:#1c100a">
@@ -1258,6 +1292,7 @@ function showMenu(){const list=[...SPOTS,HUYE].filter(s=>DEITIES.includes(s.id))
   modal(`<h3>參拜順序</h3><p class="note">點地點可直接前往</p>${list.map((s,i)=>`<button class="gbtn" data-go="${s.id}" style="display:block;width:100%;text-align:left;margin:6px 0">
     ${G.done.has(s.id)?'✅':'◻️'} ${i+1}. ${s.label||s.name+' · '+s.god}</button>`).join('')}
     <button class="gbtn" data-go="notice" style="display:block;width:100%;text-align:left;margin:6px 0">📋 公告欄 · 說明</button>
+    <button class="gbtn" data-go="deng" style="display:block;width:100%;text-align:left;margin:6px 0">🕯 供燈桌 · 點一盞燈祈福</button>
     <button class="gbtn" data-go="counter" style="display:block;width:100%;text-align:left;margin:6px 0">📝 服務處 · 報名與上疏</button>
     <div class="acts"><button class="gbtn" id="relook">換角色</button><button class="gbtn" id="share">邀朋友同來</button><button class="gbtn gold" data-close>繼續</button></div>`,
   m=>{m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const s=[...SPOTS,HUYE].find(x=>x.id===b.dataset.go); closeModal();
@@ -1317,13 +1352,14 @@ function teleport(x,z,heading){G.pos.set(x,0,z); G.heading=heading; G.yaw=G.yawT
 
 // ── 10.11 動作列(依靠近的地點切換)────────────────────────
 let barKey='';
-function renderBar(){const sp=G.spot, key=(sp?sp.id:'')+(G.act?'!':'')+(G.spot?.id==='npc'?G.status:'');
+function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(sp?sp.id:'')+(G.act?'!':'')+(G.spot?.id==='npc'?G.status:'');
   if(key===barKey) return; barKey=key; const bar=$('bar'), pr=$('prompt'); bar.innerHTML='';
   pr.style.opacity=sp&&!G.act?1:0; if(!sp||G.act) return;
-  pr.textContent=sp.kind==='notice'?'公告欄':sp.kind==='counter'?'服務處 · 報名法事、上疏':sp.id==='npc'?`大祐道長 · ${G.status}`:(sp.label||`${sp.name} · ${sp.god}`);
+  pr.textContent=sp.kind==='notice'?'公告欄':sp.kind==='counter'?'服務處 · 報名法事、上疏、供燈':sp.kind==='deng'?'供燈桌 · 點一盞燈祈福':sp.id==='npc'?`大祐道長 · ${G.status}`:(sp.label||`${sp.name} · ${sp.god}`);
   const B=(t,fn,gold)=>{const b=document.createElement('button'); b.className='gbtn'+(gold?' gold':''); b.textContent=t; b.onclick=fn; bar.appendChild(b);};
   if(sp.kind==='notice'){B('看公告',()=>showNotice(),true); B('近期法會',showEvents); return;}
-  if(sp.kind==='counter'){B('法事報名',()=>showForm('fashi'),true); B('近期法會',showEvents); B('上疏祈福',()=>showForm('shu')); B('道長在嗎',showDaoist); return;}
+  if(sp.kind==='deng'){B('供燈 300 元',()=>showForm('deng'),true); B(`供燈名單 · ${G.lamps?.length||0} 盞`,showLamps); return;}
+  if(sp.kind==='counter'){B('法事報名',()=>showForm('fashi'),true); B('供燈',()=>showForm('deng')); B('上疏祈福',()=>showForm('shu')); B('上疏進度',showShu); B('近期法會',showEvents); B('道長在嗎',showDaoist); return;}
   if(sp.id==='npc'){B('跟道長打招呼',showDaoist,true); return;}
   B(sp.id==='tiangong'?'拜天公':'合掌拜拜',()=>doAction('bow',sp),!G.done.has(sp.id)); B('點一炷香',()=>doAction('incense',sp)); if(!sp.noJiao) B('擲筊',()=>doAction('jiao',sp)); if(sp.id==='main') B('拜虎爺',()=>doAction('bow',HUYE)); B(sp.id==='tiangong'?'怎麼拜':'神明介紹',()=>showGod(sp));
 }
@@ -1417,7 +1453,7 @@ function startGame(){
   buildCamColliders();
   controls.enabled=false; camera.fov=52; camera.updateProjectionMatrix(); $('ui').style.display='none'; $('title').style.display='none';
   setupUI(); setupInput(); buildNPC(); showStart(); pollStatus(); setInterval(pollStatus,60000);
-  window.__game={walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay};
+  window.__game={walkable,get MUSIC(){return MUSIC;},G,setStatus,teleport,doAction:(k,id)=>doAction(k,SPOTS.find(s=>s.id===id)),enterGame,showForm,showDaoist,showMenu,NET,netSay,setLamps,showLamps,showShu};
   const clock=new THREE.Clock(); let t=0;
   renderer.setAnimationLoop(()=>{const dt=Math.min(.05,clock.getDelta()); t+=dt; gameTick(dt,t); animate(t); composer.render();});
 }
