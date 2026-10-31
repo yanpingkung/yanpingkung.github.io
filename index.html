@@ -956,7 +956,7 @@ const rectO=(cx,cz,w,d)=>OBST.push({x0:cx-w/2,z0:cz-d/2,x1:cx+w/2,z1:cz+d/2});
 const circO=(x,z,r)=>OBST.push({x,z,r});
 rectO(2.2,-15.2,4.2,1.4); rectO(2.2,-10,3.8,1.8); rectO(-3.9,-14,3.6,1.3); rectO(-3.9,-15.4,4,1.2);
 circO(2.2,11.2,.62); rectO(-10.4,13.0,.5,2.6); rectO(0,-16.2,22.7,.5);   // 神龕牆
-rectO((-15.3+GATE_X0-.2)/2,18.2,(GATE_X0-.2+15.3),.5); rectO((GATE_X1+.2+12)/2,18.2,(12-GATE_X1-.2),.5); circO(GATE_X0-.1,18.2,.3); circO(GATE_X1+.1,18.2,.3); OBST.push({x:2.2,z:-8.4,r:.4,npc:true});   // 法事中的道長
+rectO((-15.3+GATE_X0-.2)/2,18.2,(GATE_X0-.2+15.3),.5); rectO((GATE_X1+.2+12)/2,18.2,(12-GATE_X1-.2),.5); circO(GATE_X0-.1,18.2,.3); circO(GATE_X1+.1,18.2,.3); OBST.push({x:2.2,z:-8.4,r:.5,npc:true});   // 法事中的道長
 rectO(2.2,9.3,2.9,1.45); rectO(-.5,9.5,1.4,1.4); rectO(4.9,9.5,1.4,1.4); circO(.85,10.8,.5); circO(3.55,10.8,.5);   // 元寶、石獅、石將軍一對
 rectO(-.4,-4.6,.95,2.6); rectO(4.8,-4.6,.95,2.6);   // 廟埕兩張白鐵桌(DENG)
 rectO(-11,9.2,1.35,1.7); rectO(-11.2,-7.6,1.5,2.6);   // 桃花、文昌(柱子中間) rectO(7.4,-15.3,2.9,1.6);
@@ -1214,12 +1214,12 @@ function markDone(id){G.done.add(id); try{localStorage.setItem('yp_done',JSON.st
 // ── 10.7 道長(依狀態出現在不同位置)───────────────────────
 const DZ_RITUAL=[2.2,-8.4];                                                              // 法事中道長站的位置(主桌前)
 function buildNPC(){
-  const back=photoStatue(TX_dzRitual,1.72*560/723,1.72,DZ_RITUAL[0],0,DZ_RITUAL[1],0,0xe6ddd2);   // 法事中:延平郡王主桌正前方持令旗做法事
-  const front=photoStatue(TX_dzRest,.95,.95*669/560,7.4,.82,-15.55,0,0xe6ddd2);                     // 休息中:服務處櫃台後
+  const back=photoStatue(TX_dzRitual,2.25*560/723,2.25,DZ_RITUAL[0],0,DZ_RITUAL[1],0,0xe6ddd2);   // 法事中:延平郡王主桌正前方持令旗做法事
+  const front=photoStatue(TX_dzRest,1.2,1.2*669/560,7.4,.7,-15.55,0,0xe6ddd2);                     // 休息中:服務處櫃台後
   const shoes=[];
   G.npc={back,front,shoes,g:new THREE.Group()}; world.add(G.npc.g);
   G.npcTag=tagSprite('休息中',{bg:'rgba(30,60,30,.75)',scale:1.0}); G.npc.g.add(G.npcTag);
-  G.nameTag=tagSprite('大祐道長',{fg:'#ffd77a',bg:'rgba(120,20,12,.78)'}); G.npc.g.add(G.nameTag);
+  G.nameTag=tagSprite('大祐道長',{fg:'#ffd77a',bg:'rgba(120,20,12,.85)',scale:1.3}); G.npc.g.add(G.nameTag);
   G.awayTag=tagSprite('道長外出中 · 可留言',{bg:'rgba(60,40,20,.8)',scale:1.6}); at(G.awayTag,7.4,1.75,-14.9,world);
   setStatus(Q.get('status')||'休息中');
 }
@@ -1227,7 +1227,7 @@ function setStatus(s){
   if(!STATUS_TXT[s]) s='休息中'; G.status=s; const N=G.npc;
   N.back.visible=s==='法事中'; N.shoes.forEach(m=>m.visible=s==='法事中'); N.front.visible=s==='休息中'; N.g.visible=s!=='外出'; G.awayTag.visible=s==='外出';
   N.g.position.set(...(s==='法事中'?[DZ_RITUAL[0],0,DZ_RITUAL[1]]:[7.4,0,-15.55]));
-  G.nameTag.position.y=s==='法事中'?1.95:2.05; 
+  G.nameTag.position.y=s==='法事中'?2.45:2.3; 
   const old=G.npcTag; G.npcTag=tagSprite(s==='法事中'?'🔔 法事中':s,{bg:s==='法事中'?'rgba(150,26,16,.9)':'rgba(30,70,36,.78)',scale:s==='法事中'?1.35:1.0});
   G.npcTag.position.y=G.nameTag.position.y+.32; N.g.remove(old); N.g.add(G.npcTag);
   const st=$('stBtn'); if(st){st.querySelector('.dot').style.background=STATUS_TXT[s].dot; st.querySelector('span:last-child').textContent='道長 · '+s;}
