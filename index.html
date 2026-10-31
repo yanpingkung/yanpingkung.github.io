@@ -1218,13 +1218,23 @@ function showDaoist(){const S=STATUS_TXT[G.status];
     <div><h3>大祐道長</h3><div style="font-size:13px;opacity:.85">大稻埕延平宮 · 劉厝派鼎新門</div>
     <div style="margin-top:8px"><span class="dot" style="background:${S.dot}"></span>${S.line}</div></div></div>
     <p>${S.sub}</p><div class="acts"><button class="gbtn" data-close>關閉</button>
-    <button class="gbtn" id="toCounter">到服務處</button><a class="gbtn gold" href="${GAME.LINE}" target="_blank" rel="noopener" style="text-decoration:none">LINE 問事</a></div>`,
-    m=>m.querySelector('#toCounter').onclick=()=>{closeModal(); teleport(7.4,-12.8,Math.PI); });}
+    <button class="gbtn" id="toCounter">到服務處</button><button class="gbtn" id="toMsg">留言</button><a class="gbtn gold" href="${GAME.LINE}" target="_blank" rel="noopener" style="text-decoration:none">LINE 問事</a></div>`,
+    m=>{m.querySelector('#toCounter').onclick=()=>{closeModal(); teleport(7.4,-12.8,Math.PI);}; m.querySelector('#toMsg').onclick=showMsg;});}
 function showGod(sp){modal(`<h3>${sp.id==='tiangong'?'拜天公':sp.god}</h3><div style="font-size:13px;opacity:.8">${sp.name}</div><p>${sp.desc}</p>
   <div class="acts"><button class="gbtn" data-close>關閉</button>${sp.service?`<button class="gbtn gold" id="svc">${sp.service} 報名</button>`:''}</div>`,
   m=>{const b=m.querySelector('#svc'); if(b) b.onclick=()=>showForm('fashi',sp.service);});}
 function birthFields(){return `<label>農曆生日</label><div class="row"><input name="y" inputmode="numeric" placeholder="年(民國)"><input name="m" inputmode="numeric" placeholder="月"><input name="d" inputmode="numeric" placeholder="日"></div>
   <label>出生時辰</label><select name="hour">${HOURS.map(h=>`<option>${h}${h==='不知道'?'':'時'}</option>`).join('')}</select>`;}
+function showMsg(){                                                                        // 留言給道長(不收費)
+  modal(`<h3>💬 留言給道長</h3><p class="note">${G.status==='法事中'?'道長正在做法事,':'道長'+(G.status==='外出'?'外出中':'休息中')+','}留言會直接傳到道長的 LINE,有空會盡快回覆您。</p><form id="fm">
+    <label>姓名</label><input name="name" required maxlength="20" value="${esc(loadSave()?.name||'')}">
+    <label>聯絡方式(電話或 LINE ID)</label><input name="contact" required maxlength="60">
+    <label>想跟道長說的話</label><textarea name="note" rows="4" required maxlength="300"></textarea>
+    <div class="acts"><button type="button" class="gbtn" data-close>取消</button><button class="gbtn gold" type="submit">送出留言</button></div></form>`,
+  m=>m.querySelector('#fm').onsubmit=async e=>{e.preventDefault(); const data=Object.fromEntries(new FormData(e.target)); data.kind='留言';
+    try{const r=await (await fetch(GAME.ENDPOINT,{method:'POST',body:JSON.stringify(data)})).json(); if(!r.ok) throw r;
+      modal(`<h3>已送出 🙏</h3><p>道長收到您的留言了,${G.status==='外出'?'回來後':'有空時'}會依您留的聯絡方式回覆。</p><div class="acts"><button class="gbtn gold" data-close>好</button></div>`);}
+    catch(err){toast('送出失敗,請改用 LINE 聯繫道長');}});}
 function showForm(kind,preset){
   const fashi=kind==='fashi', deng=kind==='deng';
   const off=G.status!=='法事中';
@@ -1370,14 +1380,14 @@ function teleport(x,z,heading){G.pos.set(x,0,z); G.heading=heading; G.yaw=G.yawT
 
 // ── 10.11 動作列(依靠近的地點切換)────────────────────────
 let barKey='';
-function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(sp?sp.id:'')+(G.act?'!':'')+(G.spot?.id==='npc'?G.status:'');
+function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(sp?sp.id:'')+(G.act?'!':'')+G.status;
   if(key===barKey) return; barKey=key; const bar=$('bar'), pr=$('prompt'); bar.innerHTML='';
   pr.style.opacity=sp&&!G.act?1:0; if(!sp||G.act) return;
   pr.textContent=sp.kind==='notice'?'公告欄':sp.kind==='counter'?'服務處 · 報名法事、上疏、供燈':sp.kind==='deng'?'供燈桌 · 點一盞燈祈福':sp.id==='npc'?`大祐道長 · ${G.status}`:(sp.label||`${sp.name} · ${sp.god}`);
   const B=(t,fn,gold)=>{const b=document.createElement('button'); b.className='gbtn'+(gold?' gold':''); b.textContent=t; b.onclick=fn; bar.appendChild(b);};
   if(sp.kind==='notice'){B('看公告',()=>showNotice(),true); B('近期法會',showEvents); return;}
   if(sp.kind==='deng'){B('供燈 300 元',()=>showForm('deng'),true); B(`供燈名單 · ${G.lamps?.length||0} 盞`,showLamps); return;}
-  if(sp.kind==='counter'){B('法事報名',()=>showForm('fashi'),true); B('供燈',()=>showForm('deng')); B('上疏祈福',()=>showForm('shu')); B('上疏進度',showShu); B('近期法會',showEvents); B('道長在嗎',showDaoist); return;}
+  if(sp.kind==='counter'){B('法事報名',()=>showForm('fashi'),true); B('供燈',()=>showForm('deng')); B('上疏祈福',()=>showForm('shu')); B('上疏進度',showShu); B('近期法會',showEvents); B(G.status==='外出'?'留言給道長':'道長在嗎',G.status==='外出'?showMsg:showDaoist,G.status==='外出'); return;}
   if(sp.id==='npc'){B('跟道長打招呼',showDaoist,true); return;}
   B(sp.id==='tiangong'?'拜天公':'合掌拜拜',()=>doAction('bow',sp),!G.done.has(sp.id)); B('點一炷香',()=>doAction('incense',sp)); if(!sp.noJiao) B('擲筊',()=>doAction('jiao',sp)); if(sp.id==='main') B('去拜虎爺',()=>goSpot(HUYE)); B(sp.id==='tiangong'?'怎麼拜':'神明介紹',()=>showGod(sp));
 }
