@@ -898,8 +898,14 @@ const GAME={
     {name:'水官解厄法會',date:'2026-11-23',show:'11/23(一)· 農曆十月十五',price:'2000 元 / 戶',url:'https://yanpingkung.cashier.ecpay.com.tw/product/000000000882019'},
     {name:'年尾天赦日 · 解冤赦罪',date:'2026-12-16',show:'12/16(三)',price:'1600 元 / 戶',url:'https://yanpingkung.cashier.ecpay.com.tw/product/000000000882020'},
   ],
+  PAY:{                                           // 綠界付款連結(送出後顯示「前往付款」)
+    '上疏':'https://cart.cashier.ecpay.com.tw/qp/3yd0',
+    '補財庫':'https://yanpingkung.cashier.ecpay.com.tw/product/000000000644828',
+    '補運祭改':'https://yanpingkung.cashier.ecpay.com.tw/product/000000000646897',
+  },
   NEWS:[
-    '道長休息時間不開放法事,期間送出的報名與上疏,待道長上班後依序執行。',
+    '上疏祈福:道長上班後依序書寫上疏;休息時間送出的,待上班後執行。',
+    '法事(補運祭改、補財庫等)需由道長擇日,送出後道長會聯繫您確認日期。',
   ],
 };
 const LOOKS=[
@@ -931,8 +937,8 @@ const HUYE={id:'huye',burn:[2.2,.08,-9.58],name:'虎爺',god:'虎爺',x:2.2,z:-7
   desc:'虎爺在正殿外主桌中間的底下。虎爺是守護廟宇的神將,也是神明的座騎;民間常向虎爺祈求財運、保佑孩童平安。拜虎爺時要彎低身子。'};
 const STATUS_TXT={
   '法事中':{dot:'#e0533a',line:'道長正在廟埕為信眾進行法事',sub:'法事結束後會回覆您,也可以先在服務處留下資料。'},
-  '休息中':{dot:'#5cb36a',line:'道長休息中',sub:'休息時間不開放法事。報名與上疏可以先送出,道長上班後會依序執行。'},
-  '外出':  {dot:'#9a9a9a',line:'道長今天不在廟裡',sub:'目前不開放法事。報名與上疏可以先送出,道長上班後會依序執行;也可以用 LINE 預約時間。'},
+  '休息中':{dot:'#5cb36a',line:'道長休息中',sub:'休息時間不開放法事。上疏可以先送出,道長上班後依序執行;法事需擇日,道長會再聯繫您。'},
+  '外出':  {dot:'#9a9a9a',line:'道長今天不在廟裡',sub:'目前不開放法事。上疏可以先送出,道長上班後依序執行;法事需擇日,道長會再聯繫您,也可以用 LINE 預約。'},
 };
 const SERVICES=['補運祭改','補財庫','斬桃花／求姻緣','文昌祈福','觀元辰宮','收驚','安太歲','超度','其他'];
 const WISHES=['平安','事業','財運','健康','姻緣','學業','其他'];
@@ -1098,6 +1104,7 @@ function setupUI(){
     border:1px solid #8a6a3a;background:#160c08;color:#f6e6c4}
   #modal .row{display:flex;gap:6px} #modal .row>*{flex:1} #modal .acts{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
   #modal .note{font-size:12px;color:#b8a07a}
+  #modal .warn{background:#3a2414;border:1px solid #8a6a3a;border-radius:8px;padding:8px 10px;font-size:13px}
   #start{inset:0;z-index:7;display:flex;align-items:center;justify-content:center;background:radial-gradient(#3a1a10ee,#120a06f5)}
   #start .card{width:min(400px,calc(100vw - 32px));text-align:center}
   #start h1{margin:0;font-size:34px;letter-spacing:.5em;padding-left:.5em;color:#ecc86a} #start .sub{letter-spacing:.3em;font-size:13px;opacity:.85;margin:6px 0 18px}
@@ -1192,22 +1199,30 @@ function birthFields(){return `<label>農曆生日</label><div class="row"><inpu
 function showForm(kind,preset){
   const fashi=kind==='fashi';
   const off=G.status!=='法事中';
-  modal(`<h3>${fashi?'法事報名':'上疏祈福'}</h3>${off?`<p style="background:#3a2414;border:1px solid #8a6a3a;border-radius:8px;padding:8px 10px;font-size:13px">道長目前${G.status==='外出'?'不在廟裡':'休息中'},不開放法事。<br>您可以先送出,道長上班後會依序執行。</p>`:''}<p class="note">資料只用於道長書寫疏文與聯繫,不會公開。</p><form id="fm">
+  modal(`<h3>${fashi?'法事報名':'上疏祈福'}</h3>${fashi?`<p class="warn">法事需由道長<b>擇日</b>,送出後道長會依您留的聯絡方式,通知您法事日期。</p>`:off?`<p class="warn">道長目前${G.status==='外出'?'不在廟裡':'休息中'}。<br>您可以先送出,道長上班後依序上疏。</p>`:''}<p class="note">資料只用於道長書寫疏文與聯繫,不會公開。</p><form id="fm">
     ${fashi?`<label>法事項目</label><select name="service">${SERVICES.map(s=>`<option ${s===preset?'selected':''}>${s}</option>`).join('')}</select>`:''}
     <label>姓名</label><input name="name" required value="${esc(loadSave()?.name||'')}">
     <label>性別</label><select name="sex"><option>男</option><option>女</option></select>
     ${birthFields()}
     <label>地址(寫入疏文)</label><input name="addr" placeholder="縣市、區、路名門牌">
     ${fashi?'':`<label>祈求事項</label><select name="wish">${WISHES.map(w=>`<option>${w}</option>`).join('')}</select>`}
+    ${fashi?'<label>方便的日期/時段(參考,實際由道長擇日)</label><input name="prefer" placeholder="例:平日晚上、11 月下旬">':''}
     <label>${fashi?'想跟道長說的話':'詳細內容'}</label><textarea name="note" rows="3"></textarea>
     <label>聯絡方式(電話或 LINE ID)</label><input name="contact" required>
     <div class="acts"><button type="button" class="gbtn" data-close>取消</button><button class="gbtn gold" type="submit">送出</button></div></form>
     ${GAME.ENDPOINT?'':'<p class="note">⚠ 示範版:目前不會真的送出,正式上線後會即時通知道長。</p>'}`,
   m=>m.querySelector('#fm').onsubmit=async e=>{e.preventDefault();
     const data=Object.fromEntries(new FormData(e.target)); data.kind=fashi?'法事報名':'上疏'; data.time=new Date().toISOString();
-    if(GAME.ENDPOINT){try{const r=await (await fetch(GAME.ENDPOINT,{method:'POST',body:JSON.stringify(data)})).json(); if(!r.ok) throw r; closeModal(); toast(off?'已送出 🙏<br>道長上班後會依序執行':'已送出 🙏<br>道長收到後會盡快處理',3600);}
+    if(GAME.ENDPOINT){try{const r=await (await fetch(GAME.ENDPOINT,{method:'POST',body:JSON.stringify(data)})).json(); if(!r.ok) throw r; showSent(data,off);}
       catch(err){toast('送出失敗,請改用 LINE 聯繫道長');}}
     else{closeModal(); toast('示範版:資料未送出<br>(正式版會即時通知道長)',3600);}});}
+function showSent(d,off){
+  const fashi=d.kind==='法事報名', item=fashi?d.service:'上疏', pay=GAME.PAY[item];
+  modal(`<h3>已送出 🙏</h3><p>${fashi?`道長收到了您的<b>${esc(item)}</b>報名,會先為您<b>擇日</b>,再依您留的聯絡方式通知法事日期。`
+      :`道長收到了您的上疏祈福,${off?'上班後會依序為您書寫上疏':'會盡快為您書寫上疏'}。`}</p>
+    ${pay?`<p class="note">完成付款才算報名成功。付款時請填<b>與報名相同的姓名「${esc(d.name)}」</b>,方便道長核對。</p>`
+      :`<p class="note">此項目費用由道長聯繫時說明。</p>`}
+    <div class="acts"><button class="gbtn" data-close>${pay?'稍後再付':'關閉'}</button>${pay?`<a class="gbtn gold" href="${pay}" target="_blank" rel="noopener" style="text-decoration:none">前往付款</a>`:''}</div>`);}
 function upcoming(){const today=new Date().toISOString().slice(0,10); return GAME.EVENTS.filter(e=>e.date>=today);}
 function eventsHTML(){const ev=upcoming(); if(!ev.length) return '';
   return ev.map(e=>`<div style="display:flex;gap:10px;align-items:center;border:1px solid #6a4a2a;border-radius:10px;padding:10px 12px;margin:8px 0;background:#1c100a">
@@ -1225,7 +1240,7 @@ function showNotice(first){
   modal(`<h3>延平宮公告</h3><div style="font-size:13px;opacity:.8">大稻埕延平宮 · 劉厝派鼎新門</div>
     <p><b>這是真的延平宮。</b>場景照台北大稻埕延平宮實景製作,神像都是廟裡的真實神尊。</p>
     <p><b>怎麼參拜</b><br>左下搖桿走路,手指拖曳轉視角。入廟先到<b>天公爐</b>拜天公,再依序參拜正殿延平郡王、主桌下的虎爺、媽祖殿、財神、文昌、桃花女神。走到神明前面,下方會出現「合掌拜拜、點一炷香、擲筊」。</p>
-    <p><b>服務處</b><br>在正殿右邊。法事報名、上疏祈福送出後,由<b>大祐道長本人</b>親自處理${GAME.ENDPOINT?'':'(目前為示範版,尚未開放送出)'}。道長休息時間不開放法事,期間送出的會在上班後依序執行。</p>
+    <p><b>服務處</b><br>在正殿右邊。法事報名、上疏祈福送出後,由<b>大祐道長本人</b>親自處理${GAME.ENDPOINT?'':'(目前為示範版,尚未開放送出)'}。上疏在道長上班後依序執行;法事需擇日,道長會再聯繫您確認日期。</p>
     <p><b>道長在做什麼</b><br><span class="dot" style="background:${S.dot}"></span>${S.line}。右上角會即時顯示。</p>
     ${upcoming().length?`<p style="margin-bottom:0"><b>近期法會</b></p>${eventsHTML()}`:''}
     ${GAME.NEWS.length?`<p><b>最新消息</b><br>${GAME.NEWS.map(n=>'· '+esc(n)).join('<br>')}</p>`:''}
