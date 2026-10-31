@@ -1118,16 +1118,18 @@ function makeAvatar(L,name,{daoist=false}={}){
   return {g,upper,legL,legR,armL,armR,head,tag,skirt};
 }
 function pose(A,{walk=0,phase=0,bow=0,pray=0,raise=0,sit=0,kneel=0,lift=0,seat=0,armL=null,armR=null,zL=null,zR=null}){
-  const s=Math.sin(phase)*walk, y=.66-.5*sit-.3*kneel+lift-.06*seat;
+  const s=Math.sin(phase)*walk, y=.66-.42*sit-.3*kneel+lift-.06*seat;
+  if(sit>0&&!A.cushion){A.cushion=at(mesh(cyl(.34,.36,.13,24),std({color:0x9a2a18,roughness:.85})),0,.065,.04,A.g); at(mesh(new THREE.TorusGeometry(.335,.03,8,24),std({color:0xd9a441,roughness:.5})),0,.065,0,A.cushion).rotation.x=Math.PI/2;}   // 打坐用的蒲團
+  if(A.cushion) A.cushion.visible=sit>.01; if(A.tag) A.tag.position.y=2.0-.42*sit-.3*kneel;
   A.legL.position.y=A.legR.position.y=A.upper.position.y=y;
   if(A.skirt){const low=Math.max(sit,seat,kneel); A.skirt.scale.y=1-.55*low; A.skirt.position.y=.38+(y-.66)+.14*low;}   // 坐下時長袍跟著縮
-  A.legL.rotation.x=s*.7-1.5*sit+1.2*kneel-1.1*seat; A.legR.rotation.x=-s*.7-1.5*sit+1.2*kneel-1.1*seat; A.legL.rotation.z=-.25*sit; A.legR.rotation.z=.25*sit; A.upper.rotation.x=bow;
-  const ax=-1.2*pray-2.6*raise-.5*sit-.45*seat;
+  A.legL.rotation.x=s*.7-1.5*sit+1.2*kneel-1.1*seat; A.legR.rotation.x=-s*.7-1.5*sit+1.2*kneel-1.1*seat; A.legL.rotation.z=0; A.legR.rotation.z=0; A.legL.rotation.y=.95*sit; A.legR.rotation.y=-.95*sit;   // 盤腿 A.upper.rotation.x=bow;
+  const ax=-1.2*pray-2.6*raise-.75*sit-.45*seat;
   A.armL.rotation.x=armL??(-s*.6*(1-pray)+ax); A.armR.rotation.x=armR??(s*.6*(1-pray)+ax);
-  A.armL.rotation.z=zL??.55*pray; A.armR.rotation.z=zR??-.55*pray;
+  A.armL.rotation.z=zL??(.55*pray+.32*sit); A.armR.rotation.z=zR??(-.55*pray-.32*sit);   // 打坐:雙手放腿上
 }
 // ── 互動動作(坐下、揮手⋯):坐下會一直坐著,一走路就起來;其他做完自動結束
-const EMOTES=[['wave','👋 揮手',2.6],['sit','🧘 坐下',0],['kneel','🙇 跪拜',4.4],['clap','👏 拍手',2.4],['cheer','🎉 開心',2.4],['bow','🙏 鞠躬',2.2]];
+const EMOTES=[['wave','👋 揮手',2.6],['sit','🧘 打坐',0],['kneel','🙇 跪拜',4.4],['clap','👏 拍手',2.4],['cheer','🎉 開心',2.4],['bow','🙏 鞠躬',2.2]];
 function emoteP(e,dt){e.t+=dt; const t=e.t, E=EMOTES.find(x=>x[0]===e.k), P={walk:0};
   if(!E) return null; if(E[2]&&t>E[2]) return null;
   if(e.k==='wave'){P.armR=-2.9; P.zR=-.25+Math.sin(t*10)*.45;}
@@ -1138,7 +1140,7 @@ function emoteP(e,dt){e.t+=dt; const t=e.t, E=EMOTES.find(x=>x[0]===e.k), P={wal
   if(e.k==='bow'){P.pray=Math.min(1,t*3); P.bow=Math.max(0,Math.sin(Math.max(0,t-.3)*Math.PI/1.5))*.5;}
   return P;}
 function doEmote(k){if(G.act) return; G.emote=G.emote?.k===k&&k==='sit'?null:{k,t:0}; netSend({a:`emote:${G.emote?k:'stand'}:${++NET.seq%1000}`});}
-function showEmotes(){modal(`<h3>做個動作</h3><p class="note">線上的人都看得到。坐下後一走路就會站起來。</p>
+function showEmotes(){modal(`<h3>做個動作</h3><p class="note">線上的人都看得到。打坐會坐上蒲團,一走路就會站起來。</p>
   <div class="acts" style="justify-content:flex-start">${EMOTES.map(([k,t])=>`<button class="gbtn" data-e="${k}">${k==='sit'&&G.emote?.k==='sit'?'🧍 站起來':t}</button>`).join('')}</div>
   <div class="acts"><button class="gbtn" data-close>關閉</button></div>`,
   m=>m.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{closeModal(); doEmote(b.dataset.e);}));}
@@ -1519,7 +1521,7 @@ function setupInput(){
   addEventListener('keyup',e=>{G.keys[e.key.toLowerCase()]=false;}); addEventListener('blur',()=>{for(const k in G.keys) G.keys[k]=false;});
   if(matchMedia('(pointer:fine)').matches) document.body.classList.add('desk');
 }
-const KEYS=[['W A S D / 方向鍵','走路'],['滑鼠拖曳 / Q E','轉視角'],['Enter','打字聊天(再按 Enter 送出)'],['空白鍵 / F','拜拜、確認(金色按鈕)'],['1 ~ 6','下方第幾個按鈕'],['Tab','參拜順序、快速前往'],['N','公告'],['M','音樂開關'],['T','聊天(可打字)'],['G','動作(揮手、跪拜⋯)'],['C','坐下 / 站起來'],['Esc','關閉視窗'],['H','快捷鍵說明']];
+const KEYS=[['W A S D / 方向鍵','走路'],['滑鼠拖曳 / Q E','轉視角'],['Enter','打字聊天(再按 Enter 送出)'],['空白鍵 / F','拜拜、確認(金色按鈕)'],['1 ~ 6','下方第幾個按鈕'],['Tab','參拜順序、快速前往'],['N','公告'],['M','音樂開關'],['T','聊天(可打字)'],['G','動作(揮手、跪拜⋯)'],['C','打坐 / 站起來'],['Esc','關閉視窗'],['H','快捷鍵說明']];
 function showKeys(){modal(`<h3>⌨ 電腦快捷鍵</h3><table style="width:100%;border-collapse:collapse;font-size:14px">${KEYS.map(([a,b])=>`<tr><td style="padding:5px 8px;color:#ecc86a;white-space:nowrap">${a}</td><td style="padding:5px 8px">${b}</td></tr>`).join('')}</table>
   <div class="acts"><button class="gbtn gold" data-close>知道了</button></div>`);}
 function goSpot(s){const [x,z]=s.go||[s.x,s.z], h=Math.atan2(s.look[0]-x,s.look[2]-z); teleport(x-Math.sin(h)*.4,z-Math.cos(h)*.4,h); if(s.pitch) G.pitch=G.pitchT=s.pitch;}   // 面向神明、鏡頭在背後
