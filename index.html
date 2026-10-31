@@ -915,6 +915,7 @@ const GAME={
     '補財庫':'https://yanpingkung.cashier.ecpay.com.tw/product/000000000644828',
     '補運祭改':'https://yanpingkung.cashier.ecpay.com.tw/product/000000000646897',
   },
+  DONATE:'https://cart.cashier.ecpay.com.tw/qp/3yf9',     // 功德箱 · 添油香(金額隨喜)
   NEWS:[
     '供燈祈福 300 元:道長上班時為您點一盞燈,寫上姓名與生辰,供奉一天。',
     '上疏祈福:道長上班後依序書寫上疏;休息時間送出的,待上班後執行。',
@@ -945,6 +946,7 @@ const SPOTS=[
    desc:'桃花女神主人緣與姻緣。求良緣、和合,也可斬除爛桃花。'},
   {id:'notice',name:'公告欄',x:-8.5,z:13.0,look:[-10.4,1.6,13.0],r:1.9,kind:'notice'},
   {id:'deng',name:'供燈桌',x:2.2,z:-2.4,look:[2.2,.9,-4.6],r:2.0,kind:'deng'},
+  {id:'gongde',name:'功德箱',x:5.1,z:-8.2,look:[5.1,.6,-9.7],r:1.3,kind:'gongde'},
   {id:'counter',name:'服務處',x:7.4,z:-13.3,look:[7.4,1.3,-15.2],r:2.0,kind:'counter'},
 ];
 const HUYE={id:'huye',burn:[2.2,.08,-13.5],name:'虎爺',god:'虎爺',x:2.2,z:-13.0,r:2.2,go:[.5,-13.7],look:[2.2,.35,-14.05],pitch:.62,
@@ -968,7 +970,7 @@ rectO(2.2,-15.2,4.2,1.4); rectO(2.2,-10,3.8,1.8); rectO(-3.9,-14,3.6,1.3); rectO
 circO(2.2,11.2,.62); rectO(-10.4,13.0,.5,2.6); rectO(0,-16.2,22.7,.5);   // 神龕牆
 rectO((-15.3+GATE_X0-.2)/2,18.2,(GATE_X0-.2+15.3),.5); rectO((GATE_X1+.2+12)/2,18.2,(12-GATE_X1-.2),.5); circO(GATE_X0-.1,18.2,.3); circO(GATE_X1+.1,18.2,.3); OBST.push({x:2.2,z:-8.4,r:.5,npc:true});   // 法事中的道長
 rectO(2.2,9.3,2.9,1.45); rectO(-.5,9.5,1.4,1.4); rectO(4.9,9.5,1.4,1.4); circO(.85,10.8,.5); circO(3.55,10.8,.5);   // 元寶、石獅、石將軍一對
-rectO(-.4,-4.6,.95,2.6); rectO(4.8,-4.6,.95,2.6);   // 廟埕兩張白鐵桌(DENG)
+rectO(-.4,-4.6,.95,2.6); rectO(4.8,-4.6,.95,2.6); rectO(5.1,-9.7,.8,.8);   // 功德箱   // 廟埕兩張白鐵桌(DENG)
 rectO(-10.8,9.2,1.75,1.6); rectO(-11.2,-7.6,1.5,2.6);   // 桃花、文昌(柱子中間) rectO(7.4,-15.3,2.9,1.6);
 circO(-12.15,-18.7,.72); rectO(-13.45,-18.7,1.3,3.7);
 for(const z of VAULT.trusses){circO(11,z,.32); circO(-11,z,.32); circO(-15.6,z,.2);}
@@ -1010,6 +1012,17 @@ function buildDengTables(){                                                     
     at(mesh(new THREE.PlaneGeometry(.8,.22),std({map:plaqueTex('供燈祈福',{bg:'#4a1c16',fg:'#e9c46a',border:'#9a7434',h:200}),roughness:.35}),{cast:false}),0,.64,d/2+.005,g);}
 }
 buildDengTables();
+function buildGongde(){                                                                   // 功德箱:紅色方形大桶,主桌右前方
+  const g=new THREE.Group(); at(g,5.1,0,-9.7,world); const red=std({color:0xb01e16,roughness:.45}), gold=std({color:0xd9a441,metalness:.9,roughness:.3});
+  g.add(at(mesh(box(.66,.9,.66),red),0,.45,0));
+  for(const y of[.04,.88]) g.add(at(mesh(box(.7,.05,.7),gold),0,y,0));
+  g.add(at(mesh(box(.3,.02,.05),std({color:0x140a06,roughness:1})),0,.915,0));                    // 投錢孔
+  const tx=ctex(512,640,(c,w,h)=>{c.fillStyle='#b01e16';c.fillRect(0,0,w,h);c.strokeStyle='#e7b54a';c.lineWidth=16;c.strokeRect(20,20,w-40,h-40);
+    c.fillStyle='#f6d36a';c.textAlign='center';c.textBaseline='middle';c.font=`bold 150px ${FONT_KAI}`;['功','德','箱'].forEach((t,i)=>c.fillText(t,w/2,140+i*180));},{wrap:false});
+  for(const r of[0,Math.PI/2,-Math.PI/2]){const f=mesh(new THREE.PlaneGeometry(.56,.7),std({map:tx,roughness:.4}),{cast:false}); const d=.335;
+    at(f,Math.sin(r)*d,.46,Math.cos(r)*d,g); f.rotation.y=r;}
+}
+buildGongde();
 function buildNotice(){                                                                   // 進門左手邊、靠側牆的公告欄
   const g=new THREE.Group(); at(g,-10.4,0,13.0,world); g.rotation.y=Math.PI/2;
   for(const sx of[-1,1]) g.add(at(mesh(cyl(.05,.05,2.3,10),M.vermilion),sx*1.15,1.15,0));
@@ -1052,6 +1065,17 @@ function tagSprite(text,{fg='#fff3d6',bg='rgba(20,12,8,.66)',scale=1.25}={}){
     g.fillStyle=fg; g.textAlign='center'; g.textBaseline='middle'; g.fillText(text,w/2,66);},{wrap:false});
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true,fog:false,toneMapped:false}));
   s.scale.set(scale,scale/4,1); s.renderOrder=20; return s;
+}
+function bubbleSprite(text){                                                              // 對話泡泡:字多自動分行(每行最多 8 字)
+  const ch=[...text], n=Math.max(1,Math.ceil(ch.length/8)), per=Math.ceil(ch.length/n), lines=[];
+  for(let i=0;i<ch.length;i+=per) lines.push(ch.slice(i,i+per).join(''));
+  const W=512, H=56+lines.length*66;
+  const t=ctex(W,H,(g,w,h)=>{g.clearRect(0,0,w,h); g.font=`600 52px ${FONT_KAI}`;
+    const tw=Math.min(w-8,Math.max(...lines.map(l=>g.measureText(l).width))+60), x=(w-tw)/2;
+    g.fillStyle='rgba(255,246,224,.95)'; g.beginPath(); g.roundRect(x,8,tw,h-16,34); g.fill();
+    g.fillStyle='#3a2210'; g.textAlign='center'; g.textBaseline='middle'; lines.forEach((l,i)=>g.fillText(l,w/2,h/2+(i-(lines.length-1)/2)*66));},{wrap:false});
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true,fog:false,toneMapped:false}));
+  s.scale.set(1.5,1.5*H/W,1); s.renderOrder=21; s.userData.h=1.5*H/W; return s;
 }
 function makeAvatar(L,name,{daoist=false}={}){
   const g=new THREE.Group(), mat=c=>std({color:c,roughness:.72});
@@ -1144,6 +1168,8 @@ function setupUI(){
   #chatlog div{background:rgba(20,10,6,.62);border-radius:8px;padding:3px 9px;margin-bottom:4px;transition:opacity .8s;width:fit-content;max-width:100%;word-break:break-all}
   #chatlog b{color:#ecc86a;font-weight:normal}
   #chatIn{display:flex;gap:8px;margin-top:6px} #chatIn input{flex:1}
+  #chatbar{display:none;position:fixed;left:50%;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 70px);transform:translateX(-50%);width:min(420px,calc(100vw - 32px));z-index:5}
+  #chatbar input{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:11px 16px;border-radius:999px;border:1px solid #ecc86a;background:rgba(30,16,10,.92);color:#fff3d6;outline:none;box-shadow:0 0 16px rgba(236,200,106,.4)}
   #hud .t small{display:block;font-size:11px;letter-spacing:.15em;color:#e9d8b4;opacity:.85}
   #hud .r{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
   #prompt{left:0;right:0;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 128px);text-align:center;pointer-events:none;font-size:15px;
@@ -1176,7 +1202,7 @@ function setupUI(){
   const div=(id,html='')=>{const d=document.createElement('div'); d.id=id; d.className='gx'; d.innerHTML=html; document.body.appendChild(d); return d;};
   div('hud',`<div class="t">延平宮<small id="prog">參拜 0 / 7</small><small id="ol" style="display:none">線上 1 人</small></div><div class="r">
     <button class="gbtn" id="sayBtn" style="display:none">💬 聊天</button><button class="gbtn" id="emoBtn">🙋 動作</button><button class="gbtn" id="muBtn">♪ 音樂</button><button class="gbtn" id="nbBtn">公告</button><button class="gbtn" id="stBtn"><span class="dot"></span><span>道長</span></button><button class="gbtn" id="menuBtn">☰</button></div>`);
-  div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('chatlog'); div('modal','<div class="card"></div>');
+  div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · Enter 聊天 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('chatlog'); div('chatbar','<input id="cbIn" maxlength="20" placeholder="說點什麼… (Enter 送出、Esc 取消)" autocomplete="off" enterkeyhint="send">'); div('modal','<div class="card"></div>');
   document.getElementById('stBtn').onclick=()=>showDaoist();
   document.getElementById('nbBtn').onclick=()=>showNotice();
   document.getElementById('muBtn').onclick=()=>setMusic(!MUSIC.on);
@@ -1299,6 +1325,10 @@ function showSent(d,off){
       :`<p class="note">此項目費用由道長聯繫時說明。</p>`}
     <div class="acts"><button class="gbtn" data-close>${pay?'稍後再付':'關閉'}</button>${pay?`<a class="gbtn gold" href="${pay}" target="_blank" rel="noopener" style="text-decoration:none">前往付款</a>`:''}</div>`);}
 const chip=(t,c='#6a4a2a')=>`<span style="display:inline-block;border:1px solid ${c};border-radius:999px;padding:4px 10px;margin:3px 3px 0 0;font-size:13px;background:#1c100a">${t}</span>`;
+function showDonate(){modal(`<h3>🪙 功德箱 · 添油香</h3><p>添油香是對神明的心意,金額<b>隨喜</b>,多少都是功德。油香錢用於延平宮香火、點燈、廟務運作。</p>
+  <p class="note">付款頁可以留下姓名,大祐道長會在神前代為稟告。</p>
+  <div class="acts"><button class="gbtn" data-close>關閉</button><a class="gbtn gold" id="dn" href="${GAME.DONATE}" target="_blank" rel="noopener" style="text-decoration:none">前往添油香</a></div>`,
+  m=>m.querySelector('#dn').onclick=()=>{closeModal(); setTimeout(()=>toast('感謝您添油香 🙏<br>神明保佑、平安順遂',3600),400);});}
 function showLamps(){const L=G.lamps||[];
   modal(`<h3>🕯 供燈名單</h3><p>目前供燈桌上共 <b>${L.length}</b> 盞燈${L.length?',每一盞都由大祐道長親自點燈、寫上姓名生辰,供奉一天。':'。'}</p>
     <div>${L.map(l=>chip(`${esc(l.n)}${l.w?' · '+esc(l.w):''}`,'#8a6a3a')).join('')||'<p class="note">還沒有人供燈,成為第一盞燈吧。</p>'}</div>
@@ -1339,6 +1369,7 @@ function showMenu(){const list=SPOTS.filter(s=>DEITIES.includes(s.id)).sort((a,b
   modal(`<h3>參拜順序</h3><p class="note">點地點可直接前往</p>${list.map((s,i)=>`<button class="gbtn" data-go="${s.id}" style="display:block;width:100%;text-align:left;margin:6px 0">
     ${G.done.has(s.id)?'✅':'◻️'} ${i+1}. ${s.label||s.name+' · '+s.god}</button>`).join('')}
     <button class="gbtn" data-go="notice" style="display:block;width:100%;text-align:left;margin:6px 0">📋 公告欄 · 說明</button>
+    <button class="gbtn" data-go="gongde" style="display:block;width:100%;text-align:left;margin:6px 0">🪙 功德箱 · 添油香</button>
     <button class="gbtn" data-go="deng" style="display:block;width:100%;text-align:left;margin:6px 0">🕯 供燈桌 · 點一盞燈祈福</button>
     <button class="gbtn" data-go="counter" style="display:block;width:100%;text-align:left;margin:6px 0">📝 服務處 · 報名與上疏</button>
     <div class="acts"><button class="gbtn" id="relook">換角色</button><button class="gbtn" id="share">邀朋友同來</button><button class="gbtn gold" data-close>繼續</button></div>`,
@@ -1398,14 +1429,15 @@ function setupInput(){
     if(!G.player) return;
     if(G.busy){ if(k==='enter'||k===' ') $('modal').querySelector('.gbtn.gold')?.click(); return; }
     const bb=[...$('bar').querySelectorAll('button')];
-    if(k===' '||k==='enter'||k==='f'){e.preventDefault(); (bb.find(b=>b.classList.contains('gold'))||bb[0])?.click();}
+    if(k==='enter'){e.preventDefault(); openChatBar();}
+    else if(k===' '||k==='f'){e.preventDefault(); (bb.find(b=>b.classList.contains('gold'))||bb[0])?.click();}
     else if(/^[1-6]$/.test(k)) bb[+k-1]?.click();
     else if(k==='m') $('muBtn').click(); else if(k==='n') showNotice(); else if(k==='t') $('sayBtn').style.display!=='none'&&showSay(); else if(k==='g') showEmotes(); else if(k==='c') doEmote('sit');
     else if(k==='tab'){e.preventDefault(); showMenu();} else if(k==='h') showKeys();});
   addEventListener('keyup',e=>{G.keys[e.key.toLowerCase()]=false;}); addEventListener('blur',()=>{for(const k in G.keys) G.keys[k]=false;});
   if(matchMedia('(pointer:fine)').matches) document.body.classList.add('desk');
 }
-const KEYS=[['W A S D / 方向鍵','走路'],['滑鼠拖曳 / Q E','轉視角'],['空白鍵 / Enter','拜拜、確認(金色按鈕)'],['1 ~ 6','下方第幾個按鈕'],['Tab','參拜順序、快速前往'],['N','公告'],['M','音樂開關'],['T','聊天(可打字)'],['G','動作(揮手、跪拜⋯)'],['C','坐下 / 站起來'],['Esc','關閉視窗'],['H','快捷鍵說明']];
+const KEYS=[['W A S D / 方向鍵','走路'],['滑鼠拖曳 / Q E','轉視角'],['Enter','打字聊天(再按 Enter 送出)'],['空白鍵 / F','拜拜、確認(金色按鈕)'],['1 ~ 6','下方第幾個按鈕'],['Tab','參拜順序、快速前往'],['N','公告'],['M','音樂開關'],['T','聊天(可打字)'],['G','動作(揮手、跪拜⋯)'],['C','坐下 / 站起來'],['Esc','關閉視窗'],['H','快捷鍵說明']];
 function showKeys(){modal(`<h3>⌨ 電腦快捷鍵</h3><table style="width:100%;border-collapse:collapse;font-size:14px">${KEYS.map(([a,b])=>`<tr><td style="padding:5px 8px;color:#ecc86a;white-space:nowrap">${a}</td><td style="padding:5px 8px">${b}</td></tr>`).join('')}</table>
   <div class="acts"><button class="gbtn gold" data-close>知道了</button></div>`);}
 function goSpot(s){const [x,z]=s.go||[s.x,s.z], h=Math.atan2(s.look[0]-x,s.look[2]-z); teleport(x-Math.sin(h)*.4,z-Math.cos(h)*.4,h); if(s.pitch) G.pitch=G.pitchT=s.pitch;}   // 面向神明、鏡頭在背後
@@ -1416,9 +1448,10 @@ let barKey='';
 function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(sp?sp.id:'')+(G.act?'!':'')+G.status;
   if(key===barKey) return; barKey=key; const bar=$('bar'), pr=$('prompt'); bar.innerHTML='';
   pr.style.opacity=sp&&!G.act?1:0; if(!sp||G.act) return;
-  pr.textContent=sp.kind==='notice'?'公告欄':sp.kind==='counter'?'服務處 · 報名法事、上疏、供燈':sp.kind==='deng'?'供燈桌 · 點一盞燈祈福':sp.id==='npc'?`大祐道長 · ${G.status}`:(sp.label||`${sp.name} · ${sp.god}`);
+  pr.textContent=sp.kind==='notice'?'公告欄':sp.kind==='counter'?'服務處 · 報名法事、上疏、供燈':sp.kind==='deng'?'供燈桌 · 點一盞燈祈福':sp.kind==='gongde'?'功德箱 · 添油香':sp.id==='npc'?`大祐道長 · ${G.status}`:(sp.label||`${sp.name} · ${sp.god}`);
   const B=(t,fn,gold)=>{const b=document.createElement('button'); b.className='gbtn'+(gold?' gold':''); b.textContent=t; b.onclick=fn; bar.appendChild(b);};
   if(sp.kind==='notice'){B('看公告',()=>showNotice(),true); B('近期法會',showEvents); return;}
+  if(sp.kind==='gongde'){B('添油香',showDonate,true); return;}
   if(sp.kind==='deng'){B('供燈 300 元',()=>showForm('deng'),true); B(`供燈名單 · ${G.lamps?.length||0} 盞`,showLamps); return;}
   if(sp.kind==='counter'){B('法事報名',()=>showForm('fashi'),true); B('供燈',()=>showForm('deng')); B('上疏祈福',()=>showForm('shu')); B('上疏進度',showShu); B('近期法會',showEvents); B(G.status==='外出'?'留言給道長':'道長在嗎',G.status==='外出'?showMsg:showDaoist,G.status==='外出'); return;}
   if(sp.id==='npc'){B('跟道長打招呼',showDaoist,true); return;}
@@ -1462,6 +1495,9 @@ async function netStart(name,look){
 const netPos=()=>({x:+THREE.MathUtils.clamp(G.pos.x,-39.9,39.9).toFixed(2),z:+THREE.MathUtils.clamp(G.pos.z,-39.9,39.9).toFixed(2),r:+(Math.atan2(Math.sin(G.heading),Math.cos(G.heading))).toFixed(2)});
 function netSend(o){if(!NET.on) return; Object.assign(NET.rec,o); NET.be.upd(o); NET.hbT=0;}
 function netAct(kind,id){netSend({a:`${kind}:${id}:${++NET.seq%1000}`});}
+function openChatBar(){if(!NET.on) return toast('連線中,稍後再試'); const bar=$('chatbar'), i=$('cbIn'); bar.style.display='block'; i.value=''; i.focus();
+  i.onkeydown=e=>{e.stopPropagation(); if(e.key==='Enter'){e.preventDefault(); const v=i.value; bar.style.display='none'; i.blur(); if(v.trim()) netSay(v);} else if(e.key==='Escape'){bar.style.display='none'; i.blur();}};
+  i.onblur=()=>setTimeout(()=>bar.style.display='none',100);}
 let sayT=0;
 function netSay(txt){txt=cleanTxt(txt); if(!txt) return; if(spammy(txt)){toast('不能貼網址、帳號或電話喔'); return;} if(Date.now()-sayT<2500){toast('說慢一點喔 🙏'); return;} sayT=Date.now();
   bubble(G.player,txt); chatLog(loadSave()?.name||'我',txt); netSend({s:`${txt}:${++NET.seq%1000}`});}
@@ -1483,7 +1519,7 @@ function netUp(id,r){
 function netDel(id){const p=NET.peers.get(id); if(p){world.remove(p.A.g); NET.peers.delete(id);} netCount();}
 function netCount(){NET.count=1+NET.peers.size; const e=$('ol'); if(e) e.textContent=`線上 ${NET.count} 人`;}
 function bubble(A,txt){if(!A) return; if(A.bub) A.g.remove(A.bub);
-  A.bub=tagSprite(txt,{fg:'#3a2210',bg:'rgba(255,246,224,.94)',scale:1.15}); A.bub.position.y=2.42; A.g.add(A.bub); A.bubT=4;}
+  A.bub=bubbleSprite(txt); A.bub.position.y=2.25+A.bub.userData.h/2; A.g.add(A.bub); A.bubT=4+[...txt].length*.15;}
 function tickBubble(A,dt){if(A?.bub&&(A.bubT-=dt)<=0){A.g.remove(A.bub); A.bub.material.map.dispose(); A.bub.material.dispose(); A.bub=null;}}
 function remoteAct(p,dt){const a=p.act; if(!a) return null; a.t+=dt; const t=a.t, P={walk:0};
   if(a.kind==='bow'){P.pray=Math.min(1,t*3); P.bow=Math.max(0,Math.sin(Math.max(0,t-.4)*Math.PI))*(a.sp.id==='huye'?.85:.42)*(t<3.4?1:0); if(t>3.6) p.act=null;}
