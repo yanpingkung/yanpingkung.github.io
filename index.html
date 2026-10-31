@@ -946,10 +946,10 @@ const SPOTS=[
    desc:'桃花女神主人緣與姻緣。求良緣、和合,也可斬除爛桃花。'},
   {id:'notice',name:'公告欄',x:-8.5,z:13.0,look:[-10.4,1.6,13.0],r:1.9,kind:'notice'},
   {id:'deng',name:'供燈桌',x:2.2,z:-2.4,look:[2.2,.9,-4.6],r:2.0,kind:'deng'},
-  {id:'gongde',name:'功德箱',x:-1.0,z:-14.1,look:[-1.0,.6,-15.6],r:1.3,kind:'gongde'},
+  {id:'gongde',name:'功德箱',x:-1.0,z:-14.3,look:[-1.0,.6,-15.6],r:1.1,kind:'gongde'},
   {id:'counter',name:'服務處',x:7.4,z:-13.3,look:[7.4,1.3,-15.2],r:2.0,kind:'counter'},
 ];
-const HUYE={id:'huye',burn:[2.2,.08,-13.5],name:'虎爺',god:'虎爺',x:2.2,z:-13.0,r:2.2,go:[.5,-13.7],look:[2.2,.35,-14.05],pitch:.62,
+const HUYE={id:'huye',burn:[2.2,.08,-13.5],name:'虎爺',god:'虎爺',x:2.2,z:-13.0,r:2.2,go:[1.0,-13.4],look:[2.2,.35,-14.05],pitch:.62,
   desc:'虎爺在正殿石供桌前的地上。虎爺是守護廟宇的神將,也是神明的座騎;民間常向虎爺祈求財運、保佑孩童平安。拜虎爺時要彎低身子。'};
 SPOTS.push(HUYE);                                                                        // 虎爺也是一個參拜點(走到主桌後面)
 const STATUS_TXT={
@@ -1169,7 +1169,7 @@ function setupUI(){
   #hud{top:max(10px,env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
   #hud>*{pointer-events:auto} #hud .t{font-size:17px;letter-spacing:.3em;color:#ecc86a;text-shadow:0 2px 8px #000;white-space:nowrap;flex-shrink:0}
   #hud .r .gbtn{padding:7px 10px;font-size:13px;letter-spacing:.04em}
-  body.desk #joy{display:none} body.desk #bar{counter-reset:k;padding:0 20px;bottom:96px} body.desk #bar .gbtn::before{counter-increment:k;content:counter(k);display:inline-block;min-width:16px;margin-right:6px;padding:0 4px;border:1px solid currentColor;border-radius:4px;font-size:11px;opacity:.7}
+  body.desk #joy{display:none} body.desk #bar{counter-reset:k;left:0;right:0;flex-direction:row;justify-content:center;align-items:center;flex-wrap:wrap;padding:0 20px;bottom:96px} body.desk #bar .gbtn::before{counter-increment:k;content:counter(k);display:inline-block;min-width:16px;margin-right:6px;padding:0 4px;border:1px solid currentColor;border-radius:4px;font-size:11px;opacity:.7}
   #keyhint{display:none;position:fixed;left:14px;bottom:14px;font-size:12px;color:#e9d8b4;opacity:.75;pointer-events:auto;cursor:pointer;text-shadow:0 1px 4px #000;z-index:3} body.desk #keyhint{display:block}
   #hud .r #sayBtn,#hud .r #emoBtn{position:fixed;right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 58px);padding:10px 16px;font-size:16px;letter-spacing:.1em;border-radius:999px;background:rgba(150,60,24,.9);border-color:#ecc86a;color:#fff3d6;box-shadow:0 0 14px rgba(236,200,106,.45)}
   #hud .r #emoBtn{top:calc(max(10px,env(safe-area-inset-top)) + 112px);background:rgba(40,22,12,.85);box-shadow:none}
@@ -1183,7 +1183,7 @@ function setupUI(){
   #dock input:focus{border-color:#ecc86a;box-shadow:0 0 14px rgba(236,200,106,.45)}
   #dock button{flex-shrink:0;font:inherit;font-size:15px;height:42px;min-width:42px;padding:0 12px;border-radius:999px;border:1px solid #c89a46;background:rgba(40,22,12,.9);color:#fff3d6}
   #dock #dkSend{display:none;background:linear-gradient(#e2b04e,#a8742a);color:#2a1608;border-color:#f0cc72}
-  #dock.typing #dkSend{display:block} #dock.typing #dkEmo{display:none}
+  #dock.typing #dkSend{display:block} body.typing #bar,body.typing #emoL{display:none}
   #qp{position:fixed;left:12px;right:12px;z-index:5;display:none;gap:6px;overflow-x:auto;padding-bottom:2px} #qp.on{display:flex}
   #qp button{flex-shrink:0;font:inherit;font-size:14px;padding:7px 12px;border-radius:999px;border:1px solid #8a6a3a;background:rgba(30,16,10,.9);color:#f6e3b3}
   body.desk #dock{left:50%;right:auto;width:440px;transform:translateX(-50%);bottom:40px}
@@ -1191,7 +1191,12 @@ function setupUI(){
   #hud .r{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
   #prompt{left:0;right:0;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 150px);text-align:center;pointer-events:none;font-size:15px;
     letter-spacing:.15em;text-shadow:0 2px 6px #000;opacity:0;transition:opacity .3s}
-  #bar{left:0;right:0;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 52px);display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:0 12px 0 142px}
+  #bar{right:12px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 58px);display:flex;flex-direction:column;align-items:flex-end;gap:7px}   /* 手機:參拜按鈕在右側直排 */
+  #bar .gbtn{min-width:104px;text-align:center} #bar .blab{font-size:13px;color:#ecc86a;letter-spacing:.12em;text-shadow:0 1px 6px #000;margin-bottom:2px;max-width:46vw;text-align:right}
+  body:not(.desk) #prompt{display:none} body.desk #bar .blab{display:none}
+  #emoL{position:fixed;left:30px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 130px);z-index:4;width:58px;height:58px;border-radius:50%;font:inherit;font-size:24px;line-height:1;padding:0;
+    border:1px solid #c89a46;background:rgba(40,22,12,.85);color:#fff3d6;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  #emoL small{font-size:11px;margin-top:2px;letter-spacing:.1em} body.desk #emoL{left:14px;bottom:44px}
   #joy{left:22px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 4px);width:112px;height:112px;border-radius:50%;
     background:rgba(30,16,10,.35);border:1px solid rgba(214,170,84,.45);touch-action:none}
   #joy i{position:absolute;left:36px;top:36px;width:40px;height:40px;border-radius:50%;background:rgba(236,200,106,.75)}
@@ -1226,7 +1231,7 @@ function setupUI(){
   const div=(id,html='')=>{const d=document.createElement('div'); d.id=id; d.className='gx'; d.innerHTML=html; document.body.appendChild(d); return d;};
   div('hud',`<div class="t">延平宮<small id="prog">參拜 0 / 7</small><small id="ol" style="display:none">線上 1 人</small></div><div class="r">
     <button class="gbtn" id="sayBtn" style="display:none">💬 聊天</button><button class="gbtn" id="emoBtn">🙋 動作</button><button class="gbtn" id="muBtn">♪ 音樂</button><button class="gbtn" id="nbBtn">公告</button><button class="gbtn" id="stBtn"><span class="dot"></span><span>道長</span></button><button class="gbtn" id="menuBtn">☰</button></div>`);
-  div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · Enter 聊天 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('chatlog'); div('qp'); div('dock','<input id="dkIn" maxlength="20" placeholder="說點什麼…" autocomplete="off" enterkeyhint="send"><button id="dkSend">送出</button><button id="dkEmo">🙋 動作</button>'); div('modal','<div class="card"></div>');
+  div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · Enter 聊天 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('chatlog'); div('qp'); div('dock','<input id="dkIn" maxlength="20" placeholder="說點什麼…" autocomplete="off" enterkeyhint="send"><button id="dkSend">送出</button>'); document.body.insertAdjacentHTML('beforeend','<button id="emoL" class="gx">🙋<small>動作</small></button>'); div('modal','<div class="card"></div>');
   document.getElementById('stBtn').onclick=()=>showDaoist();
   document.getElementById('nbBtn').onclick=()=>showNotice();
   document.getElementById('muBtn').onclick=()=>setMusic(!MUSIC.on);
@@ -1526,6 +1531,7 @@ function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(G.emote?.k||
   if(key===barKey) return; barKey=key; const bar=$('bar'), pr=$('prompt'); bar.innerHTML='';
   pr.style.opacity=sp&&!G.act?1:0; if(!sp||G.act) return;
   pr.textContent=sp.kind==='notice'?'公告欄':sp.kind==='counter'?'服務處 · 報名法事、上疏、供燈':sp.kind==='deng'?'供燈桌 · 點一盞燈祈福':sp.kind==='gongde'?'功德箱 · 添油香':sp.id==='npc'?`大祐道長 · ${G.status}`:(sp.label||`${sp.name} · ${sp.god}`);
+  {const l=document.createElement('div'); l.className='blab'; l.textContent=pr.textContent; bar.appendChild(l);}   // 手機:地點名稱放在按鈕上方
   const B=(t,fn,gold)=>{const b=document.createElement('button'); b.className='gbtn'+(gold?' gold':''); b.textContent=t; b.onclick=fn; bar.appendChild(b);};
   if(sp.kind==='notice'){B('看公告',()=>showNotice(),true); B('近期法會',showEvents); return;}
   if(sp.kind==='gongde'){B('添油香',showDonate,true); return;}
@@ -1579,12 +1585,12 @@ function setupDock(){                                                           
   const place=()=>{const vv=visualViewport, kb=vv?Math.max(0,innerHeight-vv.height-vv.offsetTop):0;   // 手機鍵盤彈出時跟著往上
     dk.style.bottom=kb>60?(kb+8)+'px':''; qp.style.bottom=(kb>60?kb+8:dk.getBoundingClientRect().height+(parseFloat(getComputedStyle(dk).bottom)||12))+(kb>60?52:8)+'px';};
   const send=()=>{const v=i.value; i.value=''; if(v.trim()) netSay(v); i.blur();};
-  i.onfocus=()=>{if(!NET.on){i.blur(); return toast('連線中,稍後再試');} dk.classList.add('typing'); qp.classList.add('on'); place();};
-  i.onblur=()=>setTimeout(()=>{if(document.activeElement===i) return; dk.classList.remove('typing'); qp.classList.remove('on'); dk.style.bottom='';},150);
+  i.onfocus=()=>{if(!NET.on){i.blur(); return toast('連線中,稍後再試');} dk.classList.add('typing'); document.body.classList.add('typing'); qp.classList.add('on'); place();};
+  i.onblur=()=>setTimeout(()=>{if(document.activeElement===i) return; dk.classList.remove('typing'); document.body.classList.remove('typing'); qp.classList.remove('on'); dk.style.bottom='';},150);
   i.onkeydown=e=>{e.stopPropagation(); if(e.key==='Enter'){e.preventDefault(); send();} else if(e.key==='Escape') i.blur();};
   $('dkSend').onpointerdown=e=>{e.preventDefault(); send();};
   qp.onpointerdown=e=>{const b=e.target.closest('[data-t]'); if(!b) return; e.preventDefault(); i.value=''; netSay(b.dataset.t); i.blur();};
-  $('dkEmo').onclick=()=>showEmotes();
+  $('emoL').onclick=()=>showEmotes();
   visualViewport?.addEventListener('resize',()=>{if(document.activeElement===i) place();});
 }
 let sayT=0;
