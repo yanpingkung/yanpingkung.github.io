@@ -958,7 +958,7 @@ rectO(2.2,-15.2,4.2,1.4); rectO(2.2,-10,3.8,1.8); rectO(-3.9,-14,3.6,1.3); rectO
 circO(2.2,11.2,.62); rectO(-10.4,13.0,.5,2.6); rectO(0,-16.2,22.7,.5);   // 神龕牆
 rectO((-15.3+GATE_X0-.2)/2,18.2,(GATE_X0-.2+15.3),.5); rectO((GATE_X1+.2+12)/2,18.2,(12-GATE_X1-.2),.5); circO(GATE_X0-.1,18.2,.3); circO(GATE_X1+.1,18.2,.3); OBST.push({x:2.2,z:-8.4,r:.4,npc:true});   // 法事中的道長
 rectO(2.2,9.3,2.9,1.45); rectO(-.5,9.5,1.4,1.4); rectO(4.9,9.5,1.4,1.4); circO(.85,10.8,.5); circO(3.55,10.8,.5);   // 元寶、石獅、石將軍一對
-rectO(.9,-4.6,.95,2.6); rectO(3.5,-4.6,.95,2.6);   // 廟埕兩張白鐵桌(DENG)
+rectO(-.4,-4.6,.95,2.6); rectO(4.8,-4.6,.95,2.6);   // 廟埕兩張白鐵桌(DENG)
 rectO(-11,9.2,1.35,1.7); rectO(-11.2,-7.6,1.5,2.6);   // 桃花、文昌(柱子中間) rectO(7.4,-15.3,2.9,1.6);
 circO(-12.15,-18.7,.72); rectO(-13.45,-18.7,1.3,3.7);
 for(const z of VAULT.trusses){circO(11,z,.32); circO(-11,z,.32); circO(-15.6,z,.2);}
@@ -985,7 +985,7 @@ function buildCounter(){
 buildCounter();
 const DENG_FL=[], DENG_L=[], DENG_CUP=[], CUP_OFF=std({color:0x8a1c16,roughness:.35}), CUP_LIT=std({color:0xe0402a,roughness:.3,emissive:0xc02a10,emissiveIntensity:1.1});
 function setLamps(list){G.lamps=list||[]; DENG_FL.forEach((f,i)=>{f.visible=i<G.lamps.length; DENG_CUP[i].material=f.visible?CUP_LIT:CUP_OFF;}); DENG_L.forEach(L=>L.intensity=Math.min(1.6,G.lamps.length*.12));}
-const DENG={z:-4.6, xs:[.9,3.5], w:.95, d:2.6};                                            // 白鐵桌:直放、靠近正殿主桌,中間留走道
+const DENG={z:-4.6, xs:[-.4,4.8], w:.95, d:2.6};                                            // 白鐵桌:直放、靠近正殿主桌,中間留走道
 function buildDengTables(){                                                              // 主桌與天公爐之間的廟埕:兩張白鐵桌,桌上供燈
   const ss=std({color:0xe4e8eb,metalness:.55,roughness:.3}), cup=CUP_OFF, {w,d}=DENG,
         fl=new THREE.MeshBasicMaterial({color:0xffe08a}), glow=new THREE.MeshBasicMaterial({color:0xff9a3a,transparent:true,opacity:.5,depthWrite:false});
