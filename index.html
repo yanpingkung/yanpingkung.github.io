@@ -937,11 +937,11 @@ const SPOTS=[
   {id:'deng',name:'供燈桌',x:2.2,z:-2.4,look:[2.2,.9,-4.6],r:2.0,kind:'deng'},
   {id:'counter',name:'服務處',x:7.4,z:-13.3,look:[7.4,1.3,-15.2],r:2.0,kind:'counter'},
 ];
-const HUYE={id:'huye',burn:[2.2,.08,-13.5],name:'虎爺',god:'虎爺',x:-.8,z:-14.0,look:[2.2,.35,-14.05],r:1.4,pitch:.62,
+const HUYE={id:'huye',burn:[2.2,.08,-13.5],name:'虎爺',god:'虎爺',x:2.2,z:-13.0,r:2.2,go:[.5,-13.7],look:[2.2,.35,-14.05],pitch:.62,
   desc:'虎爺在正殿石供桌前的地上。虎爺是守護廟宇的神將,也是神明的座騎;民間常向虎爺祈求財運、保佑孩童平安。拜虎爺時要彎低身子。'};
 SPOTS.push(HUYE);                                                                        // 虎爺也是一個參拜點(走到主桌後面)
 const STATUS_TXT={
-  '法事中':{dot:'#e0533a',line:'道長正在廟埕為信眾進行法事',sub:'法事結束後會回覆您,也可以先在服務處留下資料。'},
+  '法事中':{dot:'#e0533a',line:'道長正在延平郡王主桌前進行法事',sub:'法事結束後會回覆您,也可以先在服務處留下資料。'},
   '休息中':{dot:'#5cb36a',line:'道長休息中',sub:'休息時間不開放法事。上疏可以先送出,道長上班後依序執行;法事需擇日,道長會再聯繫您。'},
   '外出':  {dot:'#9a9a9a',line:'道長今天不在廟裡',sub:'目前不開放法事。上疏可以先送出,道長上班後依序執行;法事需擇日,道長會再聯繫您,也可以用 LINE 預約。'},
 };
@@ -956,7 +956,7 @@ const rectO=(cx,cz,w,d)=>OBST.push({x0:cx-w/2,z0:cz-d/2,x1:cx+w/2,z1:cz+d/2});
 const circO=(x,z,r)=>OBST.push({x,z,r});
 rectO(2.2,-15.2,4.2,1.4); rectO(2.2,-10,3.8,1.8); rectO(-3.9,-14,3.6,1.3); rectO(-3.9,-15.4,4,1.2);
 circO(2.2,11.2,.62); rectO(-10.4,13.0,.5,2.6); rectO(0,-16.2,22.7,.5);   // 神龕牆
-rectO((-15.3+GATE_X0-.2)/2,18.2,(GATE_X0-.2+15.3),.5); rectO((GATE_X1+.2+12)/2,18.2,(12-GATE_X1-.2),.5); circO(GATE_X0-.1,18.2,.3); circO(GATE_X1+.1,18.2,.3); OBST.push({x:6.4,z:13.6,r:.45,npc:true});   // 法事中的道長
+rectO((-15.3+GATE_X0-.2)/2,18.2,(GATE_X0-.2+15.3),.5); rectO((GATE_X1+.2+12)/2,18.2,(12-GATE_X1-.2),.5); circO(GATE_X0-.1,18.2,.3); circO(GATE_X1+.1,18.2,.3); OBST.push({x:2.2,z:-8.4,r:.4,npc:true});   // 法事中的道長
 rectO(2.2,9.3,2.9,1.45); rectO(-.5,9.5,1.4,1.4); rectO(4.9,9.5,1.4,1.4); circO(.85,10.8,.5); circO(3.55,10.8,.5);   // 元寶、石獅、石將軍一對
 rectO(.9,-4.6,.95,2.6); rectO(3.5,-4.6,.95,2.6);   // 廟埕兩張白鐵桌(DENG)
 rectO(-5,8.2,1.35,1.7); rectO(-5.4,-5.3,1.5,2.6); rectO(7.4,-15.3,2.9,1.6);
@@ -1075,13 +1075,30 @@ function makeAvatar(L,name,{daoist=false}={}){
   g.traverse(o=>{if(o.isMesh) o.castShadow=true;});
   return {g,upper,legL,legR,armL,armR,head,tag};
 }
-function pose(A,{walk=0,phase=0,bow=0,pray=0,raise=0}){
-  const s=Math.sin(phase)*walk;
-  A.legL.rotation.x=s*.7; A.legR.rotation.x=-s*.7; A.upper.rotation.x=bow;
-  const ax=-1.2*pray-2.6*raise;
-  A.armL.rotation.x=-s*.6*(1-pray)+ax; A.armR.rotation.x=s*.6*(1-pray)+ax;
-  A.armL.rotation.z=.55*pray; A.armR.rotation.z=-.55*pray;
+function pose(A,{walk=0,phase=0,bow=0,pray=0,raise=0,sit=0,kneel=0,lift=0,armL=null,armR=null,zL=null,zR=null}){
+  const s=Math.sin(phase)*walk, y=.66-.5*sit-.3*kneel+lift;
+  A.legL.position.y=A.legR.position.y=A.upper.position.y=y;
+  A.legL.rotation.x=s*.7-1.5*sit+1.2*kneel; A.legR.rotation.x=-s*.7-1.5*sit+1.2*kneel; A.legL.rotation.z=-.25*sit; A.legR.rotation.z=.25*sit; A.upper.rotation.x=bow;
+  const ax=-1.2*pray-2.6*raise-.5*sit;
+  A.armL.rotation.x=armL??(-s*.6*(1-pray)+ax); A.armR.rotation.x=armR??(s*.6*(1-pray)+ax);
+  A.armL.rotation.z=zL??.55*pray; A.armR.rotation.z=zR??-.55*pray;
 }
+// ── 互動動作(坐下、揮手⋯):坐下會一直坐著,一走路就起來;其他做完自動結束
+const EMOTES=[['wave','👋 揮手',2.6],['sit','🧘 坐下',0],['kneel','🙇 跪拜',4.4],['clap','👏 拍手',2.4],['cheer','🎉 開心',2.4],['bow','🙏 鞠躬',2.2]];
+function emoteP(e,dt){e.t+=dt; const t=e.t, E=EMOTES.find(x=>x[0]===e.k), P={walk:0};
+  if(!E) return null; if(E[2]&&t>E[2]) return null;
+  if(e.k==='wave'){P.armR=-2.9; P.zR=-.25+Math.sin(t*10)*.45;}
+  if(e.k==='sit'){P.sit=Math.min(1,t*3);}
+  if(e.k==='kneel'){P.kneel=Math.min(1,t*3); P.pray=Math.min(1,t*3); P.bow=t>.5&&t<4?Math.max(0,Math.sin((t-.5)*Math.PI*3/3.5))*.75:0;}
+  if(e.k==='clap'){P.armL=P.armR=-1.35; const c=.5+Math.abs(Math.sin(t*9))*.35; P.zL=c; P.zR=-c;}
+  if(e.k==='cheer'){P.armL=P.armR=-2.8; P.zL=.45; P.zR=-.45; P.lift=Math.abs(Math.sin(t*7))*.22;}
+  if(e.k==='bow'){P.pray=Math.min(1,t*3); P.bow=Math.max(0,Math.sin(Math.max(0,t-.3)*Math.PI/1.5))*.5;}
+  return P;}
+function doEmote(k){if(G.act) return; G.emote=G.emote?.k===k&&k==='sit'?null:{k,t:0}; netSend({a:`emote:${G.emote?k:'stand'}:${++NET.seq%1000}`});}
+function showEmotes(){modal(`<h3>做個動作</h3><p class="note">線上的人都看得到。坐下後一走路就會站起來。</p>
+  <div class="acts" style="justify-content:flex-start">${EMOTES.map(([k,t])=>`<button class="gbtn" data-e="${k}">${k==='sit'&&G.emote?.k==='sit'?'🧍 站起來':t}</button>`).join('')}</div>
+  <div class="acts"><button class="gbtn" data-close>關閉</button></div>`,
+  m=>m.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{closeModal(); doEmote(b.dataset.e);}));}
 
 // ── 10.4 香、筊、煙 ───────────────────────────────────────
 const incense=new THREE.Group(); world.add(incense); incense.visible=false;
@@ -1111,7 +1128,12 @@ function setupUI(){
   #hud .r .gbtn{padding:7px 10px;font-size:13px;letter-spacing:.04em}
   body.desk #joy{display:none} body.desk #bar{counter-reset:k;padding:0 20px 34px} body.desk #bar .gbtn::before{counter-increment:k;content:counter(k);display:inline-block;min-width:16px;margin-right:6px;padding:0 4px;border:1px solid currentColor;border-radius:4px;font-size:11px;opacity:.7}
   #keyhint{display:none;position:fixed;left:14px;bottom:14px;font-size:12px;color:#e9d8b4;opacity:.75;pointer-events:auto;cursor:pointer;text-shadow:0 1px 4px #000;z-index:3} body.desk #keyhint{display:block}
-  #hud .r #sayBtn{position:fixed;right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 56px);width:50px;height:50px;border-radius:50%;padding:0;font-size:24px;background:rgba(40,22,12,.82)}
+  #hud .r #sayBtn,#hud .r #emoBtn{position:fixed;right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 58px);padding:10px 16px;font-size:16px;letter-spacing:.1em;border-radius:999px;background:rgba(150,60,24,.9);border-color:#ecc86a;color:#fff3d6;box-shadow:0 0 14px rgba(236,200,106,.45)}
+  #hud .r #emoBtn{top:calc(max(10px,env(safe-area-inset-top)) + 112px);background:rgba(40,22,12,.85);box-shadow:none}
+  #chatlog{position:fixed;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 70px);max-width:58vw;pointer-events:none;z-index:2;font-size:13px;line-height:1.5}
+  #chatlog div{background:rgba(20,10,6,.62);border-radius:8px;padding:3px 9px;margin-bottom:4px;transition:opacity .8s;width:fit-content;max-width:100%;word-break:break-all}
+  #chatlog b{color:#ecc86a;font-weight:normal}
+  #chatIn{display:flex;gap:8px;margin-top:6px} #chatIn input{flex:1}
   #hud .t small{display:block;font-size:11px;letter-spacing:.15em;color:#e9d8b4;opacity:.85}
   #hud .r{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
   #prompt{left:0;right:0;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 128px);text-align:center;pointer-events:none;font-size:15px;
@@ -1143,13 +1165,13 @@ function setupUI(){
   document.head.appendChild(css);
   const div=(id,html='')=>{const d=document.createElement('div'); d.id=id; d.className='gx'; d.innerHTML=html; document.body.appendChild(d); return d;};
   div('hud',`<div class="t">延平宮<small id="prog">參拜 0 / 7</small><small id="ol" style="display:none">線上 1 人</small></div><div class="r">
-    <button class="gbtn" id="sayBtn" style="display:none">💬</button><button class="gbtn" id="muBtn">♪ 音樂</button><button class="gbtn" id="nbBtn">公告</button><button class="gbtn" id="stBtn"><span class="dot"></span><span>道長</span></button><button class="gbtn" id="menuBtn">☰</button></div>`);
-  div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('modal','<div class="card"></div>');
+    <button class="gbtn" id="sayBtn" style="display:none">💬 聊天</button><button class="gbtn" id="emoBtn">🙋 動作</button><button class="gbtn" id="muBtn">♪ 音樂</button><button class="gbtn" id="nbBtn">公告</button><button class="gbtn" id="stBtn"><span class="dot"></span><span>道長</span></button><button class="gbtn" id="menuBtn">☰</button></div>`);
+  div('prompt'); div('bar'); div('joy','<i></i>'); div('keyhint','⌨ 電腦快捷鍵 (H)　WASD 走路 · 空白鍵 拜拜 · 1~6 選按鈕'); $('keyhint').onclick=()=>showKeys(); div('toast'); div('chatlog'); div('modal','<div class="card"></div>');
   document.getElementById('stBtn').onclick=()=>showDaoist();
   document.getElementById('nbBtn').onclick=()=>showNotice();
   document.getElementById('muBtn').onclick=()=>setMusic(!MUSIC.on);
   document.getElementById('menuBtn').onclick=()=>showMenu();
-  document.getElementById('sayBtn').onclick=()=>showSay();
+  document.getElementById('sayBtn').onclick=()=>showSay(); document.getElementById('emoBtn').onclick=()=>showEmotes();
 }
 const $=id=>document.getElementById(id);
 let toastT=0;
@@ -1161,7 +1183,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 // ── 10.6 遊戲狀態 ────────────────────────────────────────
 const G={player:null,pos:V3(2.2,0,21.5),heading:Math.PI,yaw:0,pitch:.3,yawT:0,pitchT:.3,camSnap:true,joy:{x:0,y:0},keys:{},busy:false,act:null,spot:null,
-  done:new Set(),status:'休息中',npc:null,npcTag:null,awayTag:null,phase:0};
+  done:new Set(),emote:null,status:'休息中',npc:null,npcTag:null,awayTag:null,phase:0};
 function loadSave(){try{return JSON.parse(localStorage.getItem('yp_player')||'null');}catch(e){return null;}}
 function save(o){try{localStorage.setItem('yp_player',JSON.stringify(o));}catch(e){}}
 
@@ -1190,8 +1212,9 @@ function markDone(id){G.done.add(id); try{localStorage.setItem('yp_done',JSON.st
   if(DEITIES.every(d=>G.done.has(d))&&!G.done.has('all')){G.done.add('all'); setTimeout(()=>toast('七處都參拜完成了<br>祝您平安順遂、心想事成 🙏',4200),2600);}}
 
 // ── 10.7 道長(依狀態出現在不同位置)───────────────────────
+const DZ_RITUAL=[2.2,-8.4];                                                              // 法事中道長站的位置(主桌前)
 function buildNPC(){
-  const back=photoStatue(TX_dzRitual,1.72*560/723,1.72,6.4,0,13.6,0,0xe6ddd2);                  // 法事中:廟埕持令旗、面向廟外
+  const back=photoStatue(TX_dzRitual,1.72*560/723,1.72,DZ_RITUAL[0],0,DZ_RITUAL[1],0,0xe6ddd2);   // 法事中:延平郡王主桌正前方持令旗做法事
   const front=photoStatue(TX_dzRest,.95,.95*669/560,7.4,.82,-15.55,0,0xe6ddd2);                     // 休息中:服務處櫃台後
   const shoes=[];
   G.npc={back,front,shoes,g:new THREE.Group()}; world.add(G.npc.g);
@@ -1203,9 +1226,9 @@ function buildNPC(){
 function setStatus(s){
   if(!STATUS_TXT[s]) s='休息中'; G.status=s; const N=G.npc;
   N.back.visible=s==='法事中'; N.shoes.forEach(m=>m.visible=s==='法事中'); N.front.visible=s==='休息中'; N.g.visible=s!=='外出'; G.awayTag.visible=s==='外出';
-  N.g.position.set(...(s==='法事中'?[6.4,0,13.6]:[7.4,0,-15.55]));
+  N.g.position.set(...(s==='法事中'?[DZ_RITUAL[0],0,DZ_RITUAL[1]]:[7.4,0,-15.55]));
   G.nameTag.position.y=s==='法事中'?1.95:2.05; 
-  const old=G.npcTag; G.npcTag=tagSprite(s,{bg:s==='法事中'?'rgba(120,30,20,.8)':'rgba(30,70,36,.78)',scale:1.0});
+  const old=G.npcTag; G.npcTag=tagSprite(s==='法事中'?'🔔 法事中':s,{bg:s==='法事中'?'rgba(150,26,16,.9)':'rgba(30,70,36,.78)',scale:s==='法事中'?1.35:1.0});
   G.npcTag.position.y=G.nameTag.position.y+.32; N.g.remove(old); N.g.add(G.npcTag);
   const st=$('stBtn'); if(st){st.querySelector('.dot').style.background=STATUS_TXT[s].dot; st.querySelector('span:last-child').textContent='道長 · '+s;}
 }
@@ -1359,7 +1382,7 @@ function setupInput(){
   cv.addEventListener('pointerdown',e=>{if(did!==null) return; did=e.pointerId; lx=e.clientX; ly=e.clientY;});
   cv.addEventListener('pointermove',e=>{if(e.pointerId!==did) return; G.yawT-=(e.clientX-lx)*.0048; G.pitchT=THREE.MathUtils.clamp(G.pitchT+(e.clientY-ly)*.0026,.06,.75); lx=e.clientX; ly=e.clientY;});
   const cu=e=>{if(e.pointerId===did) did=null;}; cv.addEventListener('pointerup',cu); cv.addEventListener('pointercancel',cu);
-  addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;          // 打字時不當快捷鍵
+  addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)){if(e.key==='Escape') closeModal(); return;}          // 打字時不當快捷鍵
     const k=e.key.toLowerCase(); G.keys[k]=true; if(e.repeat) return;
     if(k==='escape'){closeModal(); return;}
     if(!G.player) return;
@@ -1367,15 +1390,15 @@ function setupInput(){
     const bb=[...$('bar').querySelectorAll('button')];
     if(k===' '||k==='enter'||k==='f'){e.preventDefault(); (bb.find(b=>b.classList.contains('gold'))||bb[0])?.click();}
     else if(/^[1-6]$/.test(k)) bb[+k-1]?.click();
-    else if(k==='m') $('muBtn').click(); else if(k==='n') showNotice(); else if(k==='t') $('sayBtn').style.display!=='none'&&showSay();
+    else if(k==='m') $('muBtn').click(); else if(k==='n') showNotice(); else if(k==='t') $('sayBtn').style.display!=='none'&&showSay(); else if(k==='g') showEmotes(); else if(k==='c') doEmote('sit');
     else if(k==='tab'){e.preventDefault(); showMenu();} else if(k==='h') showKeys();});
   addEventListener('keyup',e=>{G.keys[e.key.toLowerCase()]=false;}); addEventListener('blur',()=>{for(const k in G.keys) G.keys[k]=false;});
   if(matchMedia('(pointer:fine)').matches) document.body.classList.add('desk');
 }
-const KEYS=[['W A S D / 方向鍵','走路'],['滑鼠拖曳 / Q E','轉視角'],['空白鍵 / Enter','拜拜、確認(金色按鈕)'],['1 ~ 6','下方第幾個按鈕'],['Tab','參拜順序、快速前往'],['N','公告'],['M','音樂開關'],['T','祝福語'],['Esc','關閉視窗'],['H','快捷鍵說明']];
+const KEYS=[['W A S D / 方向鍵','走路'],['滑鼠拖曳 / Q E','轉視角'],['空白鍵 / Enter','拜拜、確認(金色按鈕)'],['1 ~ 6','下方第幾個按鈕'],['Tab','參拜順序、快速前往'],['N','公告'],['M','音樂開關'],['T','聊天(可打字)'],['G','動作(揮手、跪拜⋯)'],['C','坐下 / 站起來'],['Esc','關閉視窗'],['H','快捷鍵說明']];
 function showKeys(){modal(`<h3>⌨ 電腦快捷鍵</h3><table style="width:100%;border-collapse:collapse;font-size:14px">${KEYS.map(([a,b])=>`<tr><td style="padding:5px 8px;color:#ecc86a;white-space:nowrap">${a}</td><td style="padding:5px 8px">${b}</td></tr>`).join('')}</table>
   <div class="acts"><button class="gbtn gold" data-close>知道了</button></div>`);}
-function goSpot(s){const h=Math.atan2(s.look[0]-s.x,s.look[2]-s.z); teleport(s.x-Math.sin(h)*.4,s.z-Math.cos(h)*.4,h); if(s.pitch) G.pitch=G.pitchT=s.pitch;}   // 面向神明、鏡頭在背後
+function goSpot(s){const [x,z]=s.go||[s.x,s.z], h=Math.atan2(s.look[0]-x,s.look[2]-z); teleport(x-Math.sin(h)*.4,z-Math.cos(h)*.4,h); if(s.pitch) G.pitch=G.pitchT=s.pitch;}   // 面向神明、鏡頭在背後
 function teleport(x,z,heading){G.pos.set(x,0,z); G.heading=heading; G.yaw=G.yawT=heading+Math.PI; G.camSnap=true;}
 
 // ── 10.11 動作列(依靠近的地點切換)────────────────────────
@@ -1393,7 +1416,12 @@ function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(sp?sp.id:'')
 }
 
 // ── 10.12 多人連線(Firebase Realtime Database;?net=local 用 BroadcastChannel 給 QA)──
-const PHRASES=['平安','感恩','拜拜🙏','新年快樂','加油','謝謝道長'];
+const PHRASES=['平安','感恩','拜拜🙏','新年快樂','加油','謝謝道長','大家好','歡迎'];
+const BAD=/幹你娘|幹妳娘|幹拎娘|幹你|幹妳|幹他|幹拎|姦|靠北|靠杯|操你|操妳|他媽|他馬|媽的|你娘|妳娘|機掰|雞掰|雞巴|屌|賤人|婊|白痴|白癡|智障|腦殘|去死|垃圾|廢物|約砲|色情|裸聊|博弈|賭場|代儲|fuck|shit|bitch|dick/gi;
+function cleanTxt(t){t=String(t||'').replace(/\s+/g,' ').trim().slice(0,20); return t.replace(BAD,m=>'＊'.repeat([...m].length));}   // 髒話打星號,最多 20 字
+const spammy=t=>/https?:|www\.|\.(com|net|tw|cc|io)\b|line\.me|@\w{3,}|\d[\d\s-]{6,}/i.test(t);                       // 網址、帳號、電話不給貼
+function chatLog(name,txt){const box=$('chatlog'); if(!box) return; const d=document.createElement('div'); d.innerHTML=`<b>${esc(name)}</b>:${esc(txt)}`; box.appendChild(d);
+  while(box.children.length>4) box.firstChild.remove(); setTimeout(()=>{d.style.opacity=0; setTimeout(()=>d.remove(),900);},12000);}
 const NET={on:false,local:Q.get('net')==='local',id:'',be:null,peers:new Map(),last:'',sendT:0,hbT:0,sweepT:0,seq:0,off:0,rec:null,count:1};
 const rid=()=>Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>'abcdefghijkmnpqrstuvwxyz23456789'[b&31]).join('');
 NET.id=(()=>{if(NET.local) return rid(); try{let v=localStorage.getItem('yp_net_id'); if(!v||v.length!==12){v=rid(); localStorage.setItem('yp_net_id',v);} return v;}catch(e){return rid();}})();
@@ -1424,7 +1452,9 @@ async function netStart(name,look){
 const netPos=()=>({x:+THREE.MathUtils.clamp(G.pos.x,-39.9,39.9).toFixed(2),z:+THREE.MathUtils.clamp(G.pos.z,-39.9,39.9).toFixed(2),r:+(Math.atan2(Math.sin(G.heading),Math.cos(G.heading))).toFixed(2)});
 function netSend(o){if(!NET.on) return; Object.assign(NET.rec,o); NET.be.upd(o); NET.hbT=0;}
 function netAct(kind,id){netSend({a:`${kind}:${id}:${++NET.seq%1000}`});}
-function netSay(txt){bubble(G.player,txt); netSend({s:`${txt}:${++NET.seq%1000}`});}
+let sayT=0;
+function netSay(txt){txt=cleanTxt(txt); if(!txt) return; if(spammy(txt)){toast('不能貼網址、帳號或電話喔'); return;} if(Date.now()-sayT<2500){toast('說慢一點喔 🙏'); return;} sayT=Date.now();
+  bubble(G.player,txt); chatLog(loadSave()?.name||'我',txt); netSend({s:`${txt}:${++NET.seq%1000}`});}
 const netNow=()=>Date.now()+NET.off;
 function netUp(id,r){
   if(!r||id===NET.id) return netCount();
@@ -1434,8 +1464,8 @@ function netUp(id,r){
   if(!p){const A=makeAvatar(LOOKS[r.l]||LOOKS[0],String(r.n||'善信').slice(0,12)); A.g.position.set(r.x,0,r.z); A.g.rotation.y=r.r; world.add(A.g);
     p={A,n:r.n,l:r.l,a:r.a,s:r.s,act:null,phase:0}; NET.peers.set(id,p);}
   else{
-    if(r.a&&r.a!==p.a){const [k,sid]=r.a.split(':'); const sp=SPOTS.find(x=>x.id===sid); if(sp&&['bow','incense','jiao'].includes(k)) p.act={kind:k,sp,t:0};}
-    if(r.s&&r.s!==p.s) bubble(p.A,r.s.slice(0,r.s.lastIndexOf(':')));
+    if(r.a&&r.a!==p.a){const [k,sid]=r.a.split(':'); const sp=SPOTS.find(x=>x.id===sid); if(sp&&['bow','incense','jiao'].includes(k)) p.act={kind:k,sp,t:0}; if(k==='emote') p.emote=sid==='stand'?null:{k:sid,t:0};}
+    if(r.s&&r.s!==p.s){const t=cleanTxt(r.s.slice(0,r.s.lastIndexOf(':'))); if(t&&!spammy(t)){bubble(p.A,t); chatLog(p.n||'善信',t);}}
     p.a=r.a; p.s=r.s;
   }
   p.tx=r.x; p.tz=r.z; p.tr=r.r; p.t=r.t; netCount();
@@ -1463,12 +1493,16 @@ function netTick(dt){
     let dr=p.tr-g.rotation.y; dr=Math.atan2(Math.sin(dr),Math.cos(dr)); g.rotation.y+=dr*Math.min(1,dt*10);
     const v=Math.hypot(g.position.x-ox,g.position.z-oz)/Math.max(dt,1e-3), walk=Math.min(1,v/3);
     if(walk>.05) p.phase+=dt*9*walk;
-    const P=remoteAct(p,dt); pose(p.A,P?{...P,phase:p.phase}:{walk:walk>.05?walk:0,phase:p.phase}); tickBubble(p.A,dt);}
+    if(p.emote&&walk>.05) p.emote=null;
+    const P=remoteAct(p,dt)||(p.emote&&(emoteP(p.emote,dt)||(p.emote=null))); pose(p.A,P?{...P,phase:p.phase}:{walk:walk>.05?walk:0,phase:p.phase}); tickBubble(p.A,dt);}
 }
-function showSay(){modal(`<h3>說句話</h3><p class="note">選一句,頭上會出現對話泡泡,線上的人都看得到。</p>
-  <div class="acts" style="justify-content:flex-start">${PHRASES.map(t=>`<button class="gbtn" data-t="${t}">${t}</button>`).join('')}</div>
+function showSay(){modal(`<h3>💬 聊天</h3><p class="note">頭上會出現對話泡泡,線上的人都看得到。最多 20 字,請保持莊重。</p>
+  <form id="chatIn"><input id="cin" maxlength="20" placeholder="想說的話…" autocomplete="off" enterkeyhint="send"><button class="gbtn gold" type="submit">送出</button></form>
+  <p class="note" style="margin-top:12px">或點一句:</p><div class="acts" style="justify-content:flex-start;margin-top:0">${PHRASES.map(t=>`<button class="gbtn" data-t="${t}">${t}</button>`).join('')}</div>
   <div class="acts"><button class="gbtn" data-close>關閉</button></div>`,
-  m=>m.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{closeModal(); netSay(b.dataset.t);}));}
+  m=>{m.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{closeModal(); netSay(b.dataset.t);});
+    m.querySelector('#chatIn').onsubmit=e=>{e.preventDefault(); const v=m.querySelector('#cin').value; if(!v.trim()) return; closeModal(); netSay(v);};
+    setTimeout(()=>m.querySelector('#cin')?.focus(),50);});}
 
 // ── 10.13 主迴圈 ─────────────────────────────────────────
 const CAM_RC=new THREE.Raycaster(), CAM_COLL=[];
@@ -1502,12 +1536,13 @@ function gameTick(dt,t){
     walk=mag; G.phase+=dt*9*mag;
   }
   A.g.position.copy(G.pos); A.g.rotation.y=G.heading;
-  const P=updateAction(dt)||{walk,phase:G.phase};
+  if(G.emote&&(walk>0||G.act)) G.emote=null;                                              // 一走路/參拜就結束動作
+  const P=updateAction(dt)||(G.emote&&(emoteP(G.emote,dt)||(G.emote=null)))||{walk,phase:G.phase};
   pose(A,{...P,phase:G.phase,walk:P.walk??walk});
   if(incense.visible){const h=V3(); A.armR.userData.hand.getWorldPosition(h); incense.position.copy(h).add(V3(-Math.cos(G.heading)*.06,0,Math.sin(G.heading)*.06)); incense.rotation.set(0,G.heading,0);
     emitSmoke(V3(incense.position.x,incense.position.y+.42,incense.position.z),dt);} else emitSmoke(null,dt);
   // 道長動畫
-  const N=G.npc; if(N.back.visible) N.back.scale.y=1+Math.sin(t*1.3)*.008;
+  const N=G.npc; if(N.back.visible){N.back.scale.y=1+Math.sin(t*1.3)*.008; N.back.rotation.z=Math.sin(t*1.7)*.035; G.npcTag.position.y=G.nameTag.position.y+.36+Math.sin(t*2.4)*.04;}   // 做法事:身體微晃、法事中牌子上下飄
   // 最近的互動點
   let best=null, bd=1e9;
   for(const s of SPOTS){const d=Math.hypot(G.pos.x-s.x,G.pos.z-s.z); if(d<s.r&&d<bd){bd=d; best=s;}}
