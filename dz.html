@@ -6,6 +6,10 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#120c08">
 <title>道長控制台 · 延平宮</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="道長控制台">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="dz-icon.png">
 <style>
   :root{--bg:#120c08;--card:#24140d;--line:#6a4a2a;--gold:#ecc86a;--txt:#f2e2c0;--dim:#b8a07a}
   *{box-sizing:border-box} html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:"PingFang TC","Noto Sans TC",sans-serif}
@@ -58,8 +62,9 @@ const $=id=>document.getElementById(id), esc=t=>String(t).replace(/[&<>"]/g,c=>(
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 
 // 金鑰放在網址 # 後面(不會傳到伺服器),第一次打開後記在這支手機
-const hk=new URLSearchParams(location.hash.slice(1)).get('k'); if(hk){ls.set('dz_key',hk); history.replaceState(null,'',location.pathname);}
-const KEY=ls.get('dz_key');
+// 網址保留 #k=…,這樣「加到主畫面」時金鑰會跟著存進捷徑(iPhone 主畫面捷徑跟 Safari 不共用儲存)
+const hk=new URLSearchParams(location.hash.slice(1)).get('k'); if(hk) ls.set('dz_key',hk);
+let KEY=hk||ls.get('dz_key'); if(KEY&&!hk) history.replaceState(null,'','#k='+KEY);
 const toast=(t,ms=2200)=>{const e=$('toast'); e.textContent=t; e.style.opacity=1; clearTimeout(toast.t); toast.t=setTimeout(()=>e.style.opacity=0,ms);};
 async function admin(op,v=''){if(!KEY){toast('沒有金鑰,請用道長專屬連結打開'); return null;}
   try{const r=await (await fetch(ENDPOINT,{method:'POST',body:JSON.stringify({admin:KEY,op,v})})).json(); if(!r.ok) toast(r.err==='key'?'金鑰不對':'失敗,再試一次'); return r;}catch(e){toast('網路有問題'); return null;}}
@@ -99,7 +104,7 @@ function up(id,r){const old=peers.get(id); peers.set(id,r);
 D.onChildAdded(root,v=>up(v.key,v.val())); D.onChildChanged(root,v=>up(v.key,v.val())); D.onChildRemoved(root,v=>{peers.delete(v.key); who();});
 setTimeout(()=>ready=true,1500); setInterval(who,15000);
 refresh(); setInterval(refresh,30000);
-if(!KEY) add({n:'系統',t:'這支手機還沒有金鑰,請用道長專屬連結打開一次',at:Date.now()},false);
+if(!KEY){const k=prompt('請貼上道長金鑰(在道長專屬連結 #k= 後面那串)'); if(k&&k.trim()){ls.set('dz_key',k.trim()); location.hash='k='+k.trim(); location.reload();} else add({n:'系統',t:'這支手機還沒有金鑰,請用道長專屬連結打開',at:Date.now()},false);}
 </script>
 </body>
 </html>
