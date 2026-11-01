@@ -930,7 +930,7 @@ const LOOKS=[
   {name:'學生',  shirt:0xf2f0ea, pants:0x24324a, hair:0x1c1512, style:'short'},
   {name:'上班族',shirt:0x2e4a3e, pants:0x22262a, hair:0x3a2a20, style:'long'},
 ];
-const DEITIES=['tiangong','main','huye','mazu','caishen','wenchang','taohua'];
+const DEITIES=['tiangong','main','caishen','mazu','wenchang','taohua','huye'];   // 參拜順序(道長定):天公、正殿、財神、媽祖、文昌、桃花、虎爺
 const SPOTS=[
   {id:'tiangong',burn:[2.2,1.86,11.2],name:'天公爐',god:'天公',label:'天公爐 · 拜天公',x:2.2,z:13.0,look:[2.2,3.5,40],r:2.1,noJiao:true,
    desc:'天公爐是拜天公的。入廟第一站先拜天公:面向廟外、向天地稟告自己的姓名、住址與來意,上香後再進殿參拜諸位神明。'},
@@ -1320,6 +1320,8 @@ function enterGame(name,look){
   netStart(name,look);
 }
 function updateProg(){$('prog').textContent=`參拜 ${[...G.done].filter(x=>DEITIES.includes(x)).length} / ${DEITIES.length}`;}
+function nextSpot(cur){const id=DEITIES.find(d=>d!==cur&&!G.done.has(d)); return id&&SPOTS.find(s=>s.id===id);}   // 下一個還沒拜的
+const nextTip=cur=>{const n=nextSpot(cur); return n?`<br>下一站:<b>${n.name}</b>`:'';};
 function markDone(id){G.done.add(id); try{localStorage.setItem('yp_done',JSON.stringify([...G.done]));}catch(e){} updateProg();
   if(DEITIES.every(d=>G.done.has(d))&&!G.done.has('all')){G.done.add('all'); setTimeout(()=>toast('七處都參拜完成了<br>祝您平安順遂、心想事成 🙏',4200),2600);}}
 
@@ -1439,7 +1441,7 @@ function showNotice(first){
   const S=STATUS_TXT[G.status];
   modal(`<h3>延平宮公告</h3><div style="font-size:13px;opacity:.8">大稻埕延平宮 · 劉厝派鼎新門</div>
     <p><b>這是真的延平宮。</b>場景照台北大稻埕延平宮實景製作,神像都是廟裡的真實神尊。</p>
-    <p><b>怎麼參拜</b><br>左下搖桿走路,手指拖曳轉視角。入廟先到<b>天公爐</b>拜天公,再依序參拜正殿延平郡王、主桌下的虎爺、媽祖殿、財神、文昌、桃花女神。走到神明前面,下方會出現「合掌拜拜、點一炷香、擲筊」。</p>
+    <p><b>怎麼參拜</b><br>左下搖桿走路,手指拖曳轉視角。入廟先到<b>天公爐</b>拜天公,再依序參拜正殿延平郡王、五路財神、媽祖殿、文昌帝君、桃花女神,最後拜主桌下的虎爺。走到神明前面,下方會出現「合掌拜拜、點一炷香、擲筊」。</p>
     <p><b>服務處</b><br>在正殿右邊。法事報名、上疏祈福送出後,由<b>大祐道長本人</b>親自處理${GAME.ENDPOINT?'':'(目前為示範版,尚未開放送出)'}。上疏在道長上班後依序執行;法事需擇日,道長會再聯繫您確認日期。</p>
     <p><b>道長在做什麼</b><br><span class="dot" style="background:${S.dot}"></span>${S.line}。右上角會即時顯示。</p>
     ${upcoming().length?`<p style="margin-bottom:0"><b>近期法會</b></p>${eventsHTML()}`:''}
@@ -1474,8 +1476,8 @@ function plantIncense(sp){const b=sp.burn; if(!b) return; const list=planted[sp.
   g.rotation.y=Math.random()*3; list.push(g); while(list.length>4){world.remove(list.shift());}
 }
 function finishAction(){const a=G.act; G.act=null; incense.visible=false; blocks.forEach(b=>b.visible=false);
-  if(a.kind==='bow'){markDone(a.sp.id); toast(a.sp.id==='tiangong'?'已面向廟外拜過天公 🙏<br>接著進殿參拜':a.sp.id==='huye'?'已彎身拜過虎爺 🐯🙏':`已向 <b>${a.sp.god}</b> 合掌參拜 🙏`);}
-  if(a.kind==='incense'){markDone(a.sp.id); plantIncense(a.sp); toast(a.sp.id==='tiangong'?'清香三炷已插上天公爐 🙏<br>接著進殿參拜':`清香三炷已插上香爐<br>敬奉 <b>${a.sp.god}</b> 🙏`);}
+  if(a.kind==='bow'){markDone(a.sp.id); toast((a.sp.id==='tiangong'?'已面向廟外拜過天公 🙏':a.sp.id==='huye'?'已彎身拜過虎爺 🐯🙏':`已向 <b>${a.sp.god}</b> 合掌參拜 🙏`)+nextTip(a.sp.id));}
+  if(a.kind==='incense'){markDone(a.sp.id); plantIncense(a.sp); toast((a.sp.id==='tiangong'?'清香三炷已插上天公爐 🙏':`清香三炷已插上香爐<br>敬奉 <b>${a.sp.god}</b> 🙏`)+nextTip(a.sp.id));}
   if(a.kind==='jiao'){const R2={sheng:['聖筊','一正一反 · 神明應允,所求之事可行。'],xiao:['笑筊','兩面朝上 · 神明笑而不答,可再說清楚後重新請示。'],yin:['陰筊','兩面朝下 · 神明不允,請再思量,或改日再問。']}[a.res];
     modal(`<h3>${R2[0]}</h3><p>${R2[1]}</p><p class="note">傳統上同一件事可擲三次;重大的事,歡迎到服務處請道長協助。</p>
       <div class="acts"><button class="gbtn" data-close>好</button></div>`);}
@@ -1540,7 +1542,7 @@ function renderBar(){const sp=G.spot, key=(G.lamps?.length||0)+'|'+(G.emote?.k||
   if(sp.kind==='deng'){B('供燈 300 元',()=>showForm('deng'),true); B(`供燈名單 · ${G.lamps?.length||0} 盞`,showLamps); return;}
   if(sp.kind==='counter'){B('法事報名',()=>showForm('fashi'),true); B('供燈',()=>showForm('deng')); B('上疏祈福',()=>showForm('shu')); B('上疏進度',showShu); B('近期法會',showEvents); B(G.status==='外出'?'留言給道長':'道長在嗎',G.status==='外出'?showMsg:showDaoist,G.status==='外出'); return;}
   if(sp.id==='npc'){B('跟道長打招呼',showDaoist,true); return;}
-  B(sp.id==='tiangong'?'拜天公':'合掌拜拜',()=>doAction('bow',sp),!G.done.has(sp.id)); B('點一炷香',()=>doAction('incense',sp)); if(!sp.noJiao) B('擲筊',()=>doAction('jiao',sp)); if(sp.id==='main') B('去拜虎爺',()=>goSpot(HUYE)); B(sp.id==='tiangong'?'怎麼拜':'神明介紹',()=>showGod(sp));
+  B(sp.id==='tiangong'?'拜天公':'合掌拜拜',()=>doAction('bow',sp),!G.done.has(sp.id)); B('點一炷香',()=>doAction('incense',sp)); if(!sp.noJiao) B('擲筊',()=>doAction('jiao',sp)); {const n=nextSpot(sp.id); if(n&&G.done.has(sp.id)) B('下一站 · '+n.name,()=>goSpot(n));} B(sp.id==='tiangong'?'怎麼拜':'神明介紹',()=>showGod(sp));
 }
 
 // ── 10.12 多人連線(Firebase Realtime Database;?net=local 用 BroadcastChannel 給 QA)──
