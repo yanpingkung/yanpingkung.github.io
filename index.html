@@ -109,10 +109,10 @@ function makeSkyMat(){ return new THREE.ShaderMaterial({
   uniforms:{ sunDir:{value:sunDir},
     cZen:{value:new THREE.Color(0x3a4f86)}, cMid:{value:new THREE.Color(0xb58f9c)},
     cHSun:{value:new THREE.Color(0xffb85e)}, cHAnti:{value:new THREE.Color(0xf2c2a6)},
-    cSun:{value:new THREE.Color(0xfff1cf)} },
+    cSun:{value:new THREE.Color(0xfff1cf)}, cClA:{value:new THREE.Vector3(.66,.48,.58)}, cClB:{value:new THREE.Vector3(1.25,.76,.46)} },
   vertexShader:`varying vec3 vD; void main(){ vD=position; vec4 p=projectionMatrix*modelViewMatrix*vec4(position,1.); gl_Position=p.xyww; }`,
   fragmentShader:`
-    uniform vec3 sunDir,cZen,cMid,cHSun,cHAnti,cSun; varying vec3 vD;
+    uniform vec3 sunDir,cZen,cMid,cHSun,cHAnti,cSun,cClA,cClB; varying vec3 vD;
     float h21(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     float n2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
       return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
@@ -127,7 +127,7 @@ function makeSkyMat(){ return new THREE.ShaderMaterial({
       if(h>.012){
         vec2 uv=d.xz/max(h+.12,.06); uv.x*=.45;
         float cl=smoothstep(.52,.78,fbm(uv*1.15+vec2(3.1,7.7)))*smoothstep(.015,.12,h)*(1.-smoothstep(.42,.75,h));
-        vec3 lit=mix(vec3(.66,.48,.58),vec3(1.25,.76,.46),pow(tw,2.2));
+        vec3 lit=mix(cClA,cClB,pow(tw,2.2));
         c=mix(c,lit*(.8+.4*fbm(uv*3.)),cl*.7);
       }
       float cs=max(dot(d,sd),0.);
@@ -1668,11 +1668,19 @@ function buildCamColliders(){ const bb=new THREE.Box3(), sz=new THREE.Vector3();
 // ── 10.14 現實同步:時鐘、天色(台北時間)、天氣(Open-Meteo,免金鑰)────────────
 const ENV={blend:null,wx:{code:0,temp:null},rain:null,stars:null,flashT:0,hemi:null,lights:[],clockTx:null,lastMin:-1};
 const ENV_P={    // 天色預設:白天 / 黃昏(原本的樣子) / 夜晚
-  day:  {zen:0x3f72c4,mid:0x92b8dc,hSun:0xf2e4cc,hAnti:0xc8dae8,sunC:0xfffbe8,sunL:0xfff0d8,sunI:3.4,el:58,az:200,fog:0xc4d2de,fogD:.0034,hemiS:0xd0dff0,hemiG:0x5a4a3a,hemiI:.62,exp:.6,env:.45,lamp:.45},
+  day:  {zen:0x2a62d4,mid:0x4f92e6,hSun:0xc4e2ff,hAnti:0x74aeea,sunC:0xfff6dc,sunL:0xfff4e0,sunI:3.6,el:58,az:200,fog:0x86b4e4,fogD:.0024,hemiS:0xbcd8f4,hemiG:0x6a5a46,hemiI:.8,exp:.78,env:.5,lamp:.4},   // 白天:藍天、亮
   dusk: {zen:0x3a4f86,mid:0xb58f9c,hSun:0xffb85e,hAnti:0xf2c2a6,sunC:0xfff1cf,sunL:0xffb070,sunI:5.0,el:LAYOUT.sun.elevation,az:LAYOUT.sun.azimuth,fog:0xd8ac92,fogD:.0046,hemiS:0xd6c2cc,hemiG:0x4a2a1c,hemiI:.55,exp:.62,env:.42,lamp:1},
   night:{zen:0x0a1028,mid:0x1a2448,hSun:0x343656,hAnti:0x242a48,sunC:0x9fb0d8,sunL:0x9cb2e0,sunI:1.1,el:48,az:140,fog:0x1a2030,fogD:.005,hemiS:0x6a7aa6,hemiG:0x3a2a1e,hemiI:.7,exp:1.0,env:.32,lamp:2.0}};   // 夜晚:廟埕要看得清楚
 function taipeiHour(){const q=+Q.get('hour'); if(Q.has('hour')&&!isNaN(q)) return q;
   const t=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Taipei'})); return t.getHours()+t.getMinutes()/60;}
+function solarPos(){                                     // 台北真實太陽方位(度):el 仰角、az 方位(北=0 順時針)
+  const d=new Date(), N=(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())-Date.UTC(d.getUTCFullYear(),0,0))/864e5, R=Math.PI/180;
+  const B=2*Math.PI*(N-81)/364, eot=9.87*Math.sin(2*B)-7.53*Math.cos(B)-1.5*Math.sin(B);
+  const st=taipeiHour()+(121.51-120)/15+eot/60, H=15*(st-12)*R, dec=23.44*Math.sin(2*Math.PI*(284+N)/365)*R, la=25.06*R;
+  const el=Math.asin(Math.sin(la)*Math.sin(dec)+Math.cos(la)*Math.cos(dec)*Math.cos(H));
+  const az=Math.atan2(Math.sin(H),Math.cos(H)*Math.sin(la)-Math.tan(dec)*Math.cos(la))/R+180;
+  return {el:el/R,az};}
+const SKY_DIR=new THREE.Vector3();
 function skyMix(h){                                     // 依時間在三種天色間漸變
   const k=[[0,'night',null],[4.8,'night',null],[6.2,'day',null],[16.2,'day',null],[17.6,'dusk',null],[18.8,'night',null],[24,'night',null]];
   for(let i=0;i<k.length-1;i++) if(h>=k[i][0]&&h<k[i+1][0]){const t=(h-k[i][0])/(k[i+1][0]-k[i][0]); return [k[i][1],k[i+1][1],t*t*(3-2*t)];}
@@ -1686,8 +1694,12 @@ function applyEnv(force){
   U.cZen.value.copy(P.zen).lerp(gray.clone().multiplyScalar(1-night*.85),cloudy); U.cMid.value.copy(P.mid).lerp(gray.clone().multiplyScalar(1-night*.85),cloudy);
   U.cHSun.value.copy(P.hSun).lerp(gray.clone().multiplyScalar(1-night*.8),cloudy); U.cHAnti.value.copy(P.hAnti).lerp(gray.clone().multiplyScalar(1-night*.8),cloudy);
   U.cSun.value.copy(P.sunC).multiplyScalar(1-cloudy*.9);
-  const az=THREE.MathUtils.degToRad(P.az), el=THREE.MathUtils.degToRad(P.el);
-  sunDir.set(Math.sin(az)*Math.cos(el),Math.sin(el),-Math.cos(az)*Math.cos(el)).normalize(); sun.position.copy(sunDir).multiplyScalar(90);
+  const dayW=(a==='day'?1-t:0)+(b==='day'?t:0), dim=1-night*.75;                 // 雲色:白天白、黃昏粉橘、晚上暗
+  U.cClA.value.set(.66,.48,.58).lerp(new THREE.Vector3(.86,.9,.98),dayW).multiplyScalar(dim); U.cClB.value.set(1.25,.76,.46).lerp(new THREE.Vector3(1.12,1.1,1.04),dayW).multiplyScalar(dim);
+  const dirOf=(azD,elD)=>{const az=THREE.MathUtils.degToRad(azD), el=THREE.MathUtils.degToRad(elD); return new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),-Math.cos(az)*Math.cos(el));};
+  const S=solarPos(), moon=dirOf(P.az,P.el);                                    // 白天/黃昏用真實太陽方位,晚上用月光
+  sunDir.copy(dirOf(S.az,Math.max(S.el,8))).lerp(moon,night).normalize(); sun.position.copy(sunDir).multiplyScalar(90);
+  SKY_DIR.copy(dirOf(S.az,THREE.MathUtils.clamp(S.el,2,13))).lerp(moon,night).normalize(); U.sunDir.value=SKY_DIR;   // 鏡頭只能往下看,天上的太陽畫低一點才看得到
   sun.color.copy(P.sunL); sun.intensity=P.sunI*(1-cloudy*.65);
   scene.fog.color.copy(P.fog).lerp(gray.clone().multiplyScalar(1-night*.8),cloudy*.8); scene.fog.density=P.fogD*(1+cloudy*.8+(w>=45&&w<50?1.5:0));
   ENV.hemi.color.copy(P.hemiS); ENV.hemi.groundColor.copy(P.hemiG); ENV.hemi.intensity=ENV.hemiBase=P.hemiI*(1+cloudy*.25);
